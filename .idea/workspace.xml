@@ -4,6 +4,9 @@
     <list default="true" id="84d6ef9c-b890-4202-990f-f165ad876df1" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Vr_teleop_xyz_pitch_roll.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Vr_teleop_xyz_pitch_roll.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/camera_overlay_on_VR.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/camera_overlay_on_VR.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/viz/camera_viz.py" beforeDir="false" afterPath="$PROJECT_DIR$/viz/camera_viz.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/viz/motors_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/viz/motors_test.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -128,7 +131,8 @@
       <workItem from="1783391621075" duration="7792000" />
       <workItem from="1783408828810" duration="8422000" />
       <workItem from="1783476918498" duration="9514000" />
-      <workItem from="1783497167174" duration="1135000" />
+      <workItem from="1783497167174" duration="3779000" />
+      <workItem from="1783501027211" duration="3244000" />
     </task>
     <servers />
   </component>

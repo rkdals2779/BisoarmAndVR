@@ -57,7 +57,7 @@ DT_NOMINAL = 1.0 / CONTROL_HZ
 # min_cutoff: 손이 멈춰있을 때 기본 스무딩 강도 (낮을수록 부드러움)
 # beta: 손이 빠르게 움직일 때 필터를 얼마나 "풀어주는지" (높을수록 반응 빠름/지연 적음)
 ONEEURO_MIN_CUTOFF = 0.8
-ONEEURO_BETA = 0.4
+ONEEURO_BETA = 1.0
 ONEEURO_D_CUTOFF = 1.0
 
 # --- IK ---
