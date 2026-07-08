@@ -90,8 +90,9 @@ ARM_JOINT_KEYS = [
 WRIST_FLEX_KEY = "wrist_flex.pos"
 WRIST_ROLL_KEY = "wrist_roll.pos"
 
-ROT_SCALE_FACTOR = 1.0   # 컨트롤러 회전각 -> 관절 각도 배율 (1.0 = 1:1)
-PITCH_SIGN = -1.0          # wrist_flex 반대로 움직이면 -1.0
+PITCH_SCALE_FACTOR = 1.0  # 컨트롤러 pitch -> wrist_flex 배율 (1.0 = 1:1)
+ROLL_SCALE_FACTOR = 1.0   # 컨트롤러 roll -> wrist_roll 배율 (1.0 = 1:1)
+PITCH_SIGN = -1.0         # wrist_flex 반대로 움직이면 부호를 다시 뒤집으세요
 ROLL_SIGN = 1.0           # wrist_roll 반대로 움직이면 -1.0
 
 # 회전 신호용 One Euro Filter (위치용과 신호 스케일이 달라 파라미터 분리)
@@ -226,16 +227,16 @@ def extract_pitch_roll(rel_rot_matrix):
     OpenVR 컨트롤러 로컬 축 관례: X=오른쪽, Y=위, Z=컨트롤러 뒤쪽
     (즉 -Z가 실제로 컨트롤러가 가리키는 포인팅 방향).
 
-    'XZY' 순서(로컬 X축 회전=pitch 먼저, 그다음 로컬 Z축 회전=roll,
-    마지막 로컬 Y축 회전=yaw)로 분해해서 yaw 성분을 분리해 버립니다.
-    이렇게 하면 좌우로 손목을 젓는 동작(yaw)이 pitch/roll 값에
-    거의 섞여 들어오지 않습니다.
-
-    주의(짐벌락): roll이 ±90도 근처로 가면 pitch 추출이 흔들릴 수
-    있습니다. 일반적인 손목 가동범위에서는 문제없지만, 실기에서 이상
-    동작이 보이면 상태줄에 출력되는 pitch/roll 값을 먼저 확인하세요.
+    3축 중 2개(pitch, roll)만 쓰고 yaw는 버리는데, 순서를 'XYZ'로 잡아서
+    "버리는 축(yaw=Y)"이 가운데 각도가 되게 했습니다. Tait-Bryan 분해는
+    구조적으로 가운데 각도만 ±90도로 범위가 눌리고(짐벌락과 같은 이유),
+    첫 번째/세 번째 각도는 ±180도 풀레인지가 나옵니다. 이전 버전('XZY')은
+    roll(Z)이 가운데 각도라서 손목을 크게 돌려도 값이 ±90도 근처에서
+    포화(saturate)되어 "많이 돌려도 조금만 움직이는" 증상이 났습니다.
+    yaw를 가운데로 보내면 pitch(X, 첫 번째)와 roll(Z, 세 번째) 둘 다
+    풀레인지를 그대로 씁니다.
     """
-    pitch, roll, _yaw = ScipyRotation.from_matrix(rel_rot_matrix).as_euler("XZY", degrees=False)
+    pitch, _yaw, roll = ScipyRotation.from_matrix(rel_rot_matrix).as_euler("XYZ", degrees=False)
     return float(pitch), float(roll)
 
 
@@ -434,8 +435,8 @@ try:
         pitch_raw, roll_raw = extract_pitch_roll(rel_rot)
         pitch_filt, roll_filt = rot_filter.filter(np.array([pitch_raw, roll_raw]), loop_start)
 
-        wrist_flex_target_deg = wrist_flex_home_deg + PITCH_SIGN * np.degrees(pitch_filt) * ROT_SCALE_FACTOR
-        wrist_roll_target_deg = wrist_roll_home_deg + ROLL_SIGN * np.degrees(roll_filt) * ROT_SCALE_FACTOR
+        wrist_flex_target_deg = wrist_flex_home_deg + PITCH_SIGN * np.degrees(pitch_filt) * PITCH_SCALE_FACTOR
+        wrist_roll_target_deg = wrist_roll_home_deg + ROLL_SIGN * np.degrees(roll_filt) * ROLL_SCALE_FACTOR
         wrist_flex_target_deg = float(np.clip(wrist_flex_target_deg, wrist_flex_lo_deg, wrist_flex_hi_deg))
         wrist_roll_target_deg = float(np.clip(wrist_roll_target_deg, wrist_roll_lo_deg, wrist_roll_hi_deg))
 

@@ -2,20 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="84d6ef9c-b890-4202-990f-f165ad876df1" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lerobot" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/SO101-XYZ-Navigator.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Vr_teleop_xyz_pitch_roll.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/camera_overlay_on_VR.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/claude_teleop.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/vr_so_teleop.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/vr_soarm_teleop.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/vr_soarm_teleop_only_xyz.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/viz/all_imu_viz2.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/viz/camera_viz.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/viz/hand_tracking_test.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/viz/motors_test.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Vr_teleop_xyz_pitch_roll.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Vr_teleop_xyz_pitch_roll.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -41,25 +29,25 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python.main.executor": "Run",
-    "Python.vr_skeletal_tracker_viz.executor": "Debug",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "teleop-1.0",
-    "last_opened_file_path": "/home/roboseasy/shin_ws/BisoarmAndVR",
-    "node.js.detected.package.eslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;Python.vr_skeletal_tracker_viz.executor&quot;: &quot;Debug&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;teleop-1.0&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/roboseasy/shin_ws/BisoarmAndVR&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/viz" />
@@ -140,7 +128,7 @@
       <workItem from="1783391621075" duration="7792000" />
       <workItem from="1783408828810" duration="8422000" />
       <workItem from="1783476918498" duration="9514000" />
-      <workItem from="1783497167174" duration="883000" />
+      <workItem from="1783497167174" duration="1135000" />
     </task>
     <servers />
   </component>
