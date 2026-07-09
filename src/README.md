@@ -10,7 +10,7 @@
 ## 폴더 구조
 
 ```
-vr_teleop_project/
+vr_teleop_modular_with_camera/
 ├── main.py                  # 실행 진입점 (CLI로 left/right/dual 모드 선택)
 ├── README.md
 └── vr_teleop/

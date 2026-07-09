@@ -183,7 +183,7 @@ class TeleopConfig:
 # 양팔 모드를 쓸 게 아니라면 LEFT_ARM_CONFIG는 그대로 둬도 무방합니다
 # (get_arm_configs("right")를 쓰면 참조되지 않습니다).
 # ============================================================
-URDF_PATH_DEFAULT = "/home/roboseasy/shin_ws/SO-ARM100/Simulation/SO101/so101_new_calib.urdf"
+URDF_PATH_DEFAULT = "/home/roboseasy/shin_ws/BisoarmAndVR/urdf/so101_new_calib.urdf"
 
 RIGHT_ARM_CONFIG = ArmConfig(
     name="right_arm",
