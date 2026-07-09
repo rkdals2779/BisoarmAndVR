@@ -49,7 +49,10 @@ output.py — RobotOutput.send() (실제 서보로 전송) + ConsoleStatusDispla
 
 ```bash
 pip install numpy scipy openvr ikpy pyserial
-# + lerobot (SO-101 팔로워 드라이버, 사내/원본 설치 방식대로)
+cd BisoarmAndVR/lerobot
+pip install -e .
+# SO-101 팔로워(feetech 모터) 제어용 lerobot
+pip install "lerobot[feetech]"
 ```
 
 ## 설정하기 — `vr_teleop/config.py`
@@ -64,7 +67,7 @@ RIGHT_ARM_CONFIG = ArmConfig(
     robot_id="skm_right_follower",
     robot_port="/dev/ttyACM1",
     home_pos=np.array([0.2, 0.0, 0.1]),
-    ik=IKConfig(urdf_path="/path/to/so101_new_calib.urdf"),
+    ik=IKConfig(urdf_path="/path/to/BisoarmAndVR/urdf/so101_new_calib.urdf"),
 )
 
 LEFT_ARM_CONFIG = ArmConfig(
