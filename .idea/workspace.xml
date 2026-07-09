@@ -3,8 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="84d6ef9c-b890-4202-990f-f165ad876df1" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Vr_teleop_xyz_pitch_roll.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Vr_teleop_xyz_pitch_roll_right_controller.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Vr_teleop_xyz_pitch_roll2.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/Vr_teleop_xyz_pitch_roll_left_controller.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -135,7 +133,7 @@
       <workItem from="1783497167174" duration="3779000" />
       <workItem from="1783501027211" duration="4258000" />
       <workItem from="1783561571482" duration="2934000" />
-      <workItem from="1783565568294" duration="1216000" />
+      <workItem from="1783565568294" duration="5657000" />
     </task>
     <servers />
   </component>
