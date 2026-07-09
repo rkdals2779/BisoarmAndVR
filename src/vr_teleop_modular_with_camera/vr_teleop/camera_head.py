@@ -28,6 +28,8 @@ find_shared_serial()로 로봇 팔 쪽(RobotOutput.robot)이 이미 열어놓은
 
 from typing import Optional
 
+import time
+
 import numpy as np
 import serial
 
@@ -119,6 +121,26 @@ class SharedFeetechWriter:
         packet = bytearray([0xFF, 0xFF, motor_id, length, cmd, addr, val, checksum])
         self.ser.write(packet)
 
+    def flush_input(self):
+        """공유 시리얼 포트의 입력 버퍼를 비웁니다.
+
+        이 writer로 보낸 패킷(위치/토크해제)에 대해 우리는 응답을 읽지
+        않습니다. 만약 이 서보들이 쓰기 명령에도 응답(status packet)을
+        보내도록 설정되어 있다면, 그 응답 바이트가 버퍼에 그대로 남아있게
+        됩니다. 이 상태로 두면 다음에 로봇 팔 쪽(lerobot의 FeetechMotorsBus)이
+        "자기" 명령에 대한 응답을 읽을 때 이 남은 바이트를 대신 읽어버려서
+        체크섬이 깨진 것처럼 보여 'Incorrect status packet' 같은 통신 오류로
+        이어집니다. 특히 종료 시 release_torque() 직후 -> 로봇 팔
+        disconnect()로 넘어가는 시점에 이 문제가 나기 쉬우므로, 카메라 쪽
+        쓰기가 끝난 뒤에는 항상 이걸 호출해서 다음 통신이 깨끗한 상태에서
+        시작하도록 합니다.
+        """
+        try:
+            self.ser.reset_input_buffer()
+        except AttributeError:
+            # 구버전 pyserial 호환
+            self.ser.flushInput()
+
 
 # ============================================================
 # 카메라 헤드 텔레옵 계산 (HMD yaw/pitch -> pan/tilt 목표각)
@@ -179,3 +201,10 @@ class CameraHeadController:
     def release_torque(self):
         self.writer.release_torque(self.config.pan_motor_id)
         self.writer.release_torque(self.config.tilt_motor_id)
+        # 서보가 쓰기 명령에도 응답하도록 설정되어 있을 경우를 대비해,
+        # 방금 보낸 두 패킷의 응답이 도착할 시간을 잠깐 준 뒤 입력 버퍼를
+        # 비웁니다. 이렇게 해야 바로 이어지는 로봇 팔 disconnect()가 이
+        # 남은 바이트 때문에 'Incorrect status packet' 오류로 실패하지
+        # 않습니다.
+        time.sleep(0.01)
+        self.writer.flush_input()

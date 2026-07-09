@@ -25,7 +25,17 @@ class RobotOutput:
 
     def connect(self) -> "RobotOutput":
         print(f"[{self.config.name}] 로봇 초기화 중... (port={self.config.robot_port})")
-        robot_cfg = SO101FollowerConfig(id=self.config.robot_id, port=self.config.robot_port)
+        # disable_torque_on_disconnect=True: disconnect()가 호출될 때
+        # lerobot이 모터 토크를 자동으로 꺼주도록 명시적으로 설정합니다.
+        # (lerobot 기본값도 True이지만, 설치된 lerobot 버전이나 환경에 따라
+        # 달라질 수 있으므로 여기서 명시해 둡니다.) 실제로 이게 동작하려면
+        # disconnect()가 반드시 호출되어야 하고, 그건 app.py의 shutdown()이
+        # Ctrl+C/에러/초기화 실패 등 모든 종료 경로에서 보장합니다.
+        robot_cfg = SO101FollowerConfig(
+            id=self.config.robot_id,
+            port=self.config.robot_port,
+            disable_torque_on_disconnect=True,
+        )
         self.robot = SO101Follower(robot_cfg)
         self.robot.connect()
         return self
