@@ -95,7 +95,7 @@ class CameraHeadConfig:
     tilt_motor_id: int = 8
 
     pan_home_deg: float = 180.0
-    tilt_home_deg: float = 180.0
+    tilt_home_deg: float = 220.0
 
     pan_min_deg: float = 90.0
     pan_max_deg: float = 270.0

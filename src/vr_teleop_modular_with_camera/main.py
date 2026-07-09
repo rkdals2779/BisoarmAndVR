@@ -22,7 +22,7 @@ from vr_teleop.config import TeleopConfig, get_arm_configs
 def parse_args():
     parser = argparse.ArgumentParser(description="VR 텔레옵 컨트롤러")
     parser.add_argument(
-        "--mode", choices=["left", "right", "dual"], default="dual",
+        "--mode", choices=["left", "right", "dual"], default="left",
         help="left: 왼쪽 컨트롤러로 단일팔 / right: 오른쪽 컨트롤러로 단일팔 / dual: 양팔 동시 제어 (기본: right)",
     )
     parser.add_argument(
