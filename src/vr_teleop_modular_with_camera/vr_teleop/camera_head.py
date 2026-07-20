@@ -43,7 +43,7 @@ from .trajectory import JointTrajectoryController
 # 공유 시리얼 연결 탐색
 # ============================================================
 def find_shared_serial(obj, _seen: Optional[set] = None, _depth: int = 0, _max_depth: int = 6) -> Optional[serial.Serial]:
-    """
+	"""
     obj(예: lerobot의 SO101Follower 인스턴스)의 속성들을 재귀적으로 뒤져서
     이미 열려 있는 serial.Serial 인스턴스를 찾아 반환합니다.
 
@@ -56,31 +56,31 @@ def find_shared_serial(obj, _seen: Optional[set] = None, _depth: int = 0, _max_d
     찾지 못하면 None을 반환합니다 (호출부에서 절대 새 포트를 열어
     fallback하지 않도록, 명확한 에러로 이어지게 하세요).
     """
-    if _seen is None:
-        _seen = set()
-    if id(obj) in _seen or _depth > _max_depth:
-        return None
-    _seen.add(id(obj))
+	if _seen is None:
+		_seen = set()
+	if id(obj) in _seen or _depth > _max_depth:
+		return None
+	_seen.add(id(obj))
 
-    if isinstance(obj, serial.Serial):
-        return obj if obj.is_open else None
+	if isinstance(obj, serial.Serial):
+		return obj if obj.is_open else None
 
-    obj_dict = getattr(obj, "__dict__", None)
-    if not obj_dict:
-        return None
+	obj_dict = getattr(obj, "__dict__", None)
+	if not obj_dict:
+		return None
 
-    for value in obj_dict.values():
-        found = find_shared_serial(value, _seen, _depth + 1, _max_depth)
-        if found is not None:
-            return found
-    return None
+	for value in obj_dict.values():
+		found = find_shared_serial(value, _seen, _depth + 1, _max_depth)
+		if found is not None:
+			return found
+	return None
 
 
 # ============================================================
 # 저수준 Feetech 패킷 작성 (원본 단일 파일 스크립트와 동일한 프로토콜)
 # ============================================================
 class SharedFeetechWriter:
-    """
+	"""
     이미 열려 있는 serial.Serial 연결 위에서 WRITE_DATA(0x03) 명령으로
     Feetech 서보에 직접 패킷을 씁니다.
 
@@ -89,40 +89,40 @@ class SharedFeetechWriter:
     빌려서 쓰기만 합니다.
     """
 
-    def __init__(self, shared_serial: serial.Serial):
-        self.ser = shared_serial
+	def __init__(self, shared_serial: serial.Serial):
+		self.ser = shared_serial
 
-    def write_position(self, motor_id: int, pos_deg: float):
-        # 0~360도를 0~4095로 변환
-        pos_counts = int(pos_deg * 4096 / 360.0)
-        pos_counts = max(0, min(4095, pos_counts))
-        pos_l = pos_counts & 0xFF
-        pos_h = (pos_counts >> 8) & 0xFF
+	def write_position(self, motor_id: int, pos_deg: float):
+		# 0~360도를 0~4095로 변환
+		pos_counts = int(pos_deg * 4096 / 360.0)
+		pos_counts = max(0, min(4095, pos_counts))
+		pos_l = pos_counts & 0xFF
+		pos_h = (pos_counts >> 8) & 0xFF
 
-        length = 9
-        cmd = 0x03
-        addr = 0x2A  # Target Position Register
-        checksum = ~(motor_id + length + cmd + addr + pos_l + pos_h + 0 + 0 + 0 + 0) & 0xFF
+		length = 9
+		cmd = 0x03
+		addr = 0x2A  # Target Position Register
+		checksum = ~(motor_id + length + cmd + addr + pos_l + pos_h + 0 + 0 + 0 + 0) & 0xFF
 
-        packet = bytearray([
-            0xFF, 0xFF, motor_id, length, cmd, addr,
-            pos_l, pos_h, 0x00, 0x00, 0x00, 0x00, checksum
-        ])
-        self.ser.write(packet)
+		packet = bytearray([
+			0xFF, 0xFF, motor_id, length, cmd, addr,
+			pos_l, pos_h, 0x00, 0x00, 0x00, 0x00, checksum
+		])
+		self.ser.write(packet)
 
-    def release_torque(self, motor_id: int):
-        """토크를 해제해서 손으로 굴릴 수 있는 Free 상태로 만듭니다."""
-        length = 4
-        cmd = 0x03
-        addr = 0x28  # Torque Enable Register
-        val = 0x00
-        checksum = ~(motor_id + length + cmd + addr + val) & 0xFF
+	def release_torque(self, motor_id: int):
+		"""토크를 해제해서 손으로 굴릴 수 있는 Free 상태로 만듭니다."""
+		length = 4
+		cmd = 0x03
+		addr = 0x28  # Torque Enable Register
+		val = 0x00
+		checksum = ~(motor_id + length + cmd + addr + val) & 0xFF
 
-        packet = bytearray([0xFF, 0xFF, motor_id, length, cmd, addr, val, checksum])
-        self.ser.write(packet)
+		packet = bytearray([0xFF, 0xFF, motor_id, length, cmd, addr, val, checksum])
+		self.ser.write(packet)
 
-    def flush_input(self):
-        """공유 시리얼 포트의 입력 버퍼를 비웁니다.
+	def flush_input(self):
+		"""공유 시리얼 포트의 입력 버퍼를 비웁니다.
 
         이 writer로 보낸 패킷(위치/토크해제)에 대해 우리는 응답을 읽지
         않습니다. 만약 이 서보들이 쓰기 명령에도 응답(status packet)을
@@ -135,76 +135,76 @@ class SharedFeetechWriter:
         쓰기가 끝난 뒤에는 항상 이걸 호출해서 다음 통신이 깨끗한 상태에서
         시작하도록 합니다.
         """
-        try:
-            self.ser.reset_input_buffer()
-        except AttributeError:
-            # 구버전 pyserial 호환
-            self.ser.flushInput()
+		try:
+			self.ser.reset_input_buffer()
+		except AttributeError:
+			# 구버전 pyserial 호환
+			self.ser.flushInput()
 
 
 # ============================================================
 # 카메라 헤드 텔레옵 계산 (HMD yaw/pitch -> pan/tilt 목표각)
 # ============================================================
 class CameraHeadController:
-    """
+	"""
     HMD 방향을 따라가는 pan/tilt 계산 상태 머신.
     control.py의 ArmTeleopController와 같은 패턴(calibrate 1회 -> 매 프레임
     compute)을 따르므로 app.py의 메인 루프에 그대로 끼워 넣을 수 있습니다.
     """
 
-    def __init__(self, config: CameraHeadConfig, writer: SharedFeetechWriter):
-        self.config = config
-        self.writer = writer
+	def __init__(self, config: CameraHeadConfig, writer: SharedFeetechWriter):
+		self.config = config
+		self.writer = writer
 
-        self.rot_filter = OneEuroFilter(
-            min_cutoff=config.rot_filter.min_cutoff,
-            beta=config.rot_filter.beta,
-            d_cutoff=config.rot_filter.d_cutoff,
-        )
-        self.trajectory = JointTrajectoryController(
-            kp=config.trajectory.kp,
-            max_vel_deg_s=config.trajectory.max_vel_deg_s,
-            max_acc_deg_s2=config.trajectory.max_acc_deg_s2,
-        )
-        self.trajectory.reset([config.pan_home_deg, config.tilt_home_deg])
+		self.rot_filter = OneEuroFilter(
+			min_cutoff=config.rot_filter.min_cutoff,
+			beta=config.rot_filter.beta,
+			d_cutoff=config.rot_filter.d_cutoff,
+		)
+		self.trajectory = JointTrajectoryController(
+			kp=config.trajectory.kp,
+			max_vel_deg_s=config.trajectory.max_vel_deg_s,
+			max_acc_deg_s2=config.trajectory.max_acc_deg_s2,
+		)
+		self.trajectory.reset([config.pan_home_deg, config.tilt_home_deg])
 
-        self._home_rot: Optional[np.ndarray] = None
+		self._home_rot: Optional[np.ndarray] = None
 
-    def is_calibrated(self) -> bool:
-        return self._home_rot is not None
+	def is_calibrated(self) -> bool:
+		return self._home_rot is not None
 
-    def calibrate(self, hmd_rot: np.ndarray):
-        """이번 HMD 방향을 영점으로 저장하고, 모터를 홈 포지션으로 보냅니다."""
-        self._home_rot = hmd_rot.copy()
-        self.writer.write_position(self.config.pan_motor_id, self.config.pan_home_deg)
-        self.writer.write_position(self.config.tilt_motor_id, self.config.tilt_home_deg)
+	def calibrate(self, hmd_rot: np.ndarray):
+		"""이번 HMD 방향을 영점으로 저장하고, 모터를 홈 포지션으로 보냅니다."""
+		self._home_rot = hmd_rot.copy()
+		self.writer.write_position(self.config.pan_motor_id, self.config.pan_home_deg)
+		self.writer.write_position(self.config.tilt_motor_id, self.config.tilt_home_deg)
 
-    def compute_and_send(self, hmd_rot: np.ndarray, t: float, dt: float):
-        """calibrate()가 이미 호출된 상태에서 매 프레임 호출합니다.
+	def compute_and_send(self, hmd_rot: np.ndarray, t: float, dt: float):
+		"""calibrate()가 이미 호출된 상태에서 매 프레임 호출합니다.
         반환값은 (pan_deg, tilt_deg) - 콘솔 상태 표시용."""
-        cfg = self.config
+		cfg = self.config
 
-        rel_rot = self._home_rot.T @ hmd_rot
-        yaw_raw, pitch_raw = extract_yaw_pitch(rel_rot)
-        yaw_filt, pitch_filt = self.rot_filter.filter(np.array([yaw_raw, pitch_raw]), t)
+		rel_rot = self._home_rot.T @ hmd_rot
+		yaw_raw, pitch_raw = extract_yaw_pitch(rel_rot)
+		yaw_filt, pitch_filt = self.rot_filter.filter(np.array([yaw_raw, pitch_raw]), t)
 
-        pan_target = cfg.pan_home_deg + cfg.yaw_sign * np.degrees(yaw_filt) * cfg.yaw_scale
-        tilt_target = cfg.tilt_home_deg + cfg.pitch_sign * np.degrees(pitch_filt) * cfg.pitch_scale
-        pan_target = float(np.clip(pan_target, cfg.pan_min_deg, cfg.pan_max_deg))
-        tilt_target = float(np.clip(tilt_target, cfg.tilt_min_deg, cfg.tilt_max_deg))
+		pan_target = cfg.pan_home_deg + cfg.yaw_sign * np.degrees(yaw_filt) * cfg.yaw_scale
+		tilt_target = cfg.tilt_home_deg + cfg.pitch_sign * np.degrees(pitch_filt) * cfg.pitch_scale
+		pan_target = float(np.clip(pan_target, cfg.pan_min_deg, cfg.pan_max_deg))
+		tilt_target = float(np.clip(tilt_target, cfg.tilt_min_deg, cfg.tilt_max_deg))
 
-        smoothed = self.trajectory.update([pan_target, tilt_target], dt)
-        self.writer.write_position(cfg.pan_motor_id, float(smoothed[0]))
-        self.writer.write_position(cfg.tilt_motor_id, float(smoothed[1]))
-        return float(smoothed[0]), float(smoothed[1])
+		smoothed = self.trajectory.update([pan_target, tilt_target], dt)
+		self.writer.write_position(cfg.pan_motor_id, float(smoothed[0]))
+		self.writer.write_position(cfg.tilt_motor_id, float(smoothed[1]))
+		return float(smoothed[0]), float(smoothed[1])
 
-    def release_torque(self):
-        self.writer.release_torque(self.config.pan_motor_id)
-        self.writer.release_torque(self.config.tilt_motor_id)
-        # 서보가 쓰기 명령에도 응답하도록 설정되어 있을 경우를 대비해,
-        # 방금 보낸 두 패킷의 응답이 도착할 시간을 잠깐 준 뒤 입력 버퍼를
-        # 비웁니다. 이렇게 해야 바로 이어지는 로봇 팔 disconnect()가 이
-        # 남은 바이트 때문에 'Incorrect status packet' 오류로 실패하지
-        # 않습니다.
-        time.sleep(0.01)
-        self.writer.flush_input()
+	def release_torque(self):
+		self.writer.release_torque(self.config.pan_motor_id)
+		self.writer.release_torque(self.config.tilt_motor_id)
+		# 서보가 쓰기 명령에도 응답하도록 설정되어 있을 경우를 대비해,
+		# 방금 보낸 두 패킷의 응답이 도착할 시간을 잠깐 준 뒤 입력 버퍼를
+		# 비웁니다. 이렇게 해야 바로 이어지는 로봇 팔 disconnect()가 이
+		# 남은 바이트 때문에 'Incorrect status packet' 오류로 실패하지
+		# 않습니다.
+		time.sleep(0.01)
+		self.writer.flush_input()

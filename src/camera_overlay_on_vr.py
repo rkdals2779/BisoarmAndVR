@@ -26,10 +26,10 @@ pygame.display.set_mode((100, 100), DOUBLEBUF | OPENGL | HIDDEN)
 
 # 2. OpenVR 초기화 (오버레이 모드)
 try:
-    openvr.init(openvr.VRApplication_Overlay)
+	openvr.init(openvr.VRApplication_Overlay)
 except openvr.OpenVRError as e:
-    print(f"OpenVR 초기화 실패: {e}")
-    sys.exit(1)
+	print(f"OpenVR 초기화 실패: {e}")
+	sys.exit(1)
 
 vr_overlay = openvr.IVROverlay()
 overlay_handle = vr_overlay.createOverlay("RobotCam", "Robot Camera View")
@@ -41,9 +41,9 @@ mat.m[1][0] = 0.0; mat.m[1][1] = 1.0; mat.m[1][2] = 0.0; mat.m[1][3] = 0.0
 mat.m[2][0] = 0.0; mat.m[2][1] = 0.0; mat.m[2][2] = 1.0; mat.m[2][3] = -1.0
 
 vr_overlay.setOverlayTransformTrackedDeviceRelative(
-    overlay_handle,
-    openvr.k_unTrackedDeviceIndex_Hmd,
-    mat
+	overlay_handle,
+	openvr.k_unTrackedDeviceIndex_Hmd,
+	mat
 )
 vr_overlay.setOverlayWidthInMeters(overlay_handle, 1.0)
 vr_overlay.showOverlay(overlay_handle)
@@ -51,8 +51,8 @@ vr_overlay.showOverlay(overlay_handle)
 # 4. 카메라 및 OpenGL 텍스처 설정
 cap = cv2.VideoCapture(4)  # /dev/video4
 if not cap.isOpened():
-    print("카메라를 열 수 없습니다. /dev/video4 연결을 확인하세요.")
-    sys.exit(1)
+	print("카메라를 열 수 없습니다. /dev/video4 연결을 확인하세요.")
+	sys.exit(1)
 
 tex_id = glGenTextures(1)
 glBindTexture(GL_TEXTURE_2D, tex_id)
@@ -63,35 +63,35 @@ print("VR 오버레이 스트리밍 시작... (종료하려면 Ctrl+C)")
 
 # 5. 메인 루프 (카메라 프레임 -> OpenGL 텍스처 -> OpenVR 오버레이)
 try:
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            continue
+	while True:
+		ret, frame = cap.read()
+		if not ret:
+			continue
 
-        # OpenCV(BGR) -> OpenGL(RGBA). 알파 채널을 포함해야 OverlayError_InvalidTexture를 피할 수 있음
-        frame_rgba = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
-        # OpenGL은 이미지 원점을 좌측 하단으로 간주하므로 상하 반전 필요
-        frame_rgba = cv2.flip(frame_rgba, 0)
-        h, w, _ = frame_rgba.shape
+		# OpenCV(BGR) -> OpenGL(RGBA). 알파 채널을 포함해야 OverlayError_InvalidTexture를 피할 수 있음
+		frame_rgba = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+		# OpenGL은 이미지 원점을 좌측 하단으로 간주하므로 상하 반전 필요
+		frame_rgba = cv2.flip(frame_rgba, 0)
+		h, w, _ = frame_rgba.shape
 
-        glBindTexture(GL_TEXTURE_2D, tex_id)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, frame_rgba.tobytes())
-        # 업로드가 완전히 끝난 뒤에 텍스처 핸들을 컴포지터에 넘기도록 보장
-        glFlush()
+		glBindTexture(GL_TEXTURE_2D, tex_id)
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, frame_rgba.tobytes())
+		# 업로드가 완전히 끝난 뒤에 텍스처 핸들을 컴포지터에 넘기도록 보장
+		glFlush()
 
-        ovr_texture = openvr.Texture_t()
-        ovr_texture.handle = int(tex_id)
-        ovr_texture.eType = openvr.TextureType_OpenGL
-        ovr_texture.eColorSpace = openvr.ColorSpace_Auto
+		ovr_texture = openvr.Texture_t()
+		ovr_texture.handle = int(tex_id)
+		ovr_texture.eType = openvr.TextureType_OpenGL
+		ovr_texture.eColorSpace = openvr.ColorSpace_Auto
 
-        vr_overlay.setOverlayTexture(overlay_handle, ovr_texture)
+		vr_overlay.setOverlayTexture(overlay_handle, ovr_texture)
 
-        # 시스템 부하를 줄이기 위한 약간의 대기시간 (약 60FPS 제한)
-        time.sleep(0.016)
+		# 시스템 부하를 줄이기 위한 약간의 대기시간 (약 60FPS 제한)
+		time.sleep(0.016)
 
 except KeyboardInterrupt:
-    print("종료 중...")
+	print("종료 중...")
 finally:
-    cap.release()
-    openvr.shutdown()
-    pygame.quit()
+	cap.release()
+	openvr.shutdown()
+	pygame.quit()

@@ -17,30 +17,30 @@ import numpy as np
 
 
 class JointTrajectoryController:
-    def __init__(self, kp: float, max_vel_deg_s: float, max_acc_deg_s2: float):
-        self.kp = kp
-        self.kd = 2.0 * np.sqrt(kp)  # 임계감쇠 조건
-        self.max_vel = max_vel_deg_s
-        self.max_acc = max_acc_deg_s2
-        self.pos = None
-        self.vel = None
+	def __init__(self, kp: float, max_vel_deg_s: float, max_acc_deg_s2: float):
+		self.kp = kp
+		self.kd = 2.0 * np.sqrt(kp)  # 임계감쇠 조건
+		self.max_vel = max_vel_deg_s
+		self.max_acc = max_acc_deg_s2
+		self.pos = None
+		self.vel = None
 
-    def reset(self, pos_deg):
-        self.pos = np.asarray(pos_deg, dtype=float).copy()
-        self.vel = np.zeros_like(self.pos)
+	def reset(self, pos_deg):
+		self.pos = np.asarray(pos_deg, dtype=float).copy()
+		self.vel = np.zeros_like(self.pos)
 
-    def update(self, target_deg, dt):
-        target_deg = np.asarray(target_deg, dtype=float)
-        if self.pos is None:
-            self.reset(target_deg)
-            return self.pos.copy()
+	def update(self, target_deg, dt):
+		target_deg = np.asarray(target_deg, dtype=float)
+		if self.pos is None:
+			self.reset(target_deg)
+			return self.pos.copy()
 
-        error = target_deg - self.pos
-        accel = self.kp * error - self.kd * self.vel
-        accel = np.clip(accel, -self.max_acc, self.max_acc)
+		error = target_deg - self.pos
+		accel = self.kp * error - self.kd * self.vel
+		accel = np.clip(accel, -self.max_acc, self.max_acc)
 
-        self.vel = self.vel + accel * dt
-        self.vel = np.clip(self.vel, -self.max_vel, self.max_vel)
+		self.vel = self.vel + accel * dt
+		self.vel = np.clip(self.vel, -self.max_vel, self.max_vel)
 
-        self.pos = self.pos + self.vel * dt
-        return self.pos.copy()
+		self.pos = self.pos + self.vel * dt
+		return self.pos.copy()

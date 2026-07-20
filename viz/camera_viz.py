@@ -15,14 +15,14 @@ cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREE
 
 print("카메라 스트리밍 중... (종료: q)")
 while True:
-    ret, frame = cap.read()
-    if not ret: break
+	ret, frame = cap.read()
+	if not ret: break
 
-    # 4. 전체화면으로 설정된 창에 프레임 출력
-    cv2.imshow(window_name, frame)
+	# 4. 전체화면으로 설정된 창에 프레임 출력
+	cv2.imshow(window_name, frame)
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+	if cv2.waitKey(1) & 0xFF == ord('q'):
+		break
 
 cap.release()
 cv2.destroyAllWindows()

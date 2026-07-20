@@ -11,40 +11,40 @@ import numpy as np
 
 
 class OneEuroFilter:
-    def __init__(self, min_cutoff: float = 1.0, beta: float = 0.0, d_cutoff: float = 1.0):
-        self.min_cutoff = min_cutoff
-        self.beta = beta
-        self.d_cutoff = d_cutoff
-        self.x_prev = None
-        self.dx_prev = None
-        self.t_prev = None
+	def __init__(self, min_cutoff: float = 1.0, beta: float = 0.0, d_cutoff: float = 1.0):
+		self.min_cutoff = min_cutoff
+		self.beta = beta
+		self.d_cutoff = d_cutoff
+		self.x_prev = None
+		self.dx_prev = None
+		self.t_prev = None
 
-    @staticmethod
-    def _alpha(dt, cutoff):
-        tau = 1.0 / (2 * np.pi * cutoff)
-        return 1.0 / (1.0 + tau / dt)
+	@staticmethod
+	def _alpha(dt, cutoff):
+		tau = 1.0 / (2 * np.pi * cutoff)
+		return 1.0 / (1.0 + tau / dt)
 
-    def filter(self, x, t):
-        x = np.asarray(x, dtype=float)
+	def filter(self, x, t):
+		x = np.asarray(x, dtype=float)
 
-        if self.t_prev is None:
-            self.x_prev = x.copy()
-            self.dx_prev = np.zeros_like(x)
-            self.t_prev = t
-            return x.copy()
+		if self.t_prev is None:
+			self.x_prev = x.copy()
+			self.dx_prev = np.zeros_like(x)
+			self.t_prev = t
+			return x.copy()
 
-        dt = max(t - self.t_prev, 1e-6)
+		dt = max(t - self.t_prev, 1e-6)
 
-        dx = (x - self.x_prev) / dt
-        a_d = self._alpha(dt, self.d_cutoff)
-        dx_hat = a_d * dx + (1 - a_d) * self.dx_prev
+		dx = (x - self.x_prev) / dt
+		a_d = self._alpha(dt, self.d_cutoff)
+		dx_hat = a_d * dx + (1 - a_d) * self.dx_prev
 
-        speed = float(np.linalg.norm(dx_hat))
-        cutoff = self.min_cutoff + self.beta * speed
-        a = self._alpha(dt, cutoff)
-        x_hat = a * x + (1 - a) * self.x_prev
+		speed = float(np.linalg.norm(dx_hat))
+		cutoff = self.min_cutoff + self.beta * speed
+		a = self._alpha(dt, cutoff)
+		x_hat = a * x + (1 - a) * self.x_prev
 
-        self.x_prev = x_hat
-        self.dx_prev = dx_hat
-        self.t_prev = t
-        return x_hat.copy()
+		self.x_prev = x_hat
+		self.dx_prev = dx_hat
+		self.t_prev = t
+		return x_hat.copy()
