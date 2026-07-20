@@ -63,12 +63,14 @@ class WristMappingConfig:
     """
 	wrist_flex_key: str = 'wrist_flex.pos'
 	wrist_roll_key: str = 'wrist_roll.pos'
-	pitch_scale: float = 1.0            # 컨트롤러 pitch -> wrist_flex 배율 (1.0 = 1:1)
+	pitch_scale: float = 1.0            # pitch -> wrist_flex 배율 (1:1)
 	roll_scale: float = 1.0             # 컨트롤러 roll -> wrist_roll 배율 (1.0 = 1:1)
 	pitch_sign: float = -1.0            # wrist_flex 반대로 움직이면 부호를 다시 뒤집으세요
 	roll_sign: float = 1.0              # wrist_roll 반대로 움직이면 -1.0
 	filter: OneEuroFilterConfig = field(
-		default_factory=lambda: OneEuroFilterConfig(min_cutoff=1.0, beta=0.3, d_cutoff=1.0)
+		default_factory=lambda: OneEuroFilterConfig(
+			min_cutoff=1.0, beta=0.3, d_cutoff=1.0
+		)
 	)
 
 
@@ -110,10 +112,14 @@ class CameraHeadConfig:
 	pitch_sign: float = 1.0
 
 	rot_filter: OneEuroFilterConfig = field(
-		default_factory=lambda: OneEuroFilterConfig(min_cutoff=1.0, beta=0.3, d_cutoff=1.0)
+		default_factory=lambda: OneEuroFilterConfig(
+			min_cutoff=1.0, beta=0.3, d_cutoff=1.0
+		)
 	)
 	trajectory: TrajectoryConfig = field(
-		default_factory=lambda: TrajectoryConfig(kp=45.0, max_vel_deg_s=150.0, max_acc_deg_s2=600.0)
+		default_factory=lambda: TrajectoryConfig(
+			kp=45.0, max_vel_deg_s=150.0, max_acc_deg_s2=600.0
+		)
 	)
 
 
@@ -153,7 +159,9 @@ class ArmConfig:
 	axis_signs: tuple[float, float, float] = (1.0, 1.0, 1.0)
 
 	position_filter: OneEuroFilterConfig = field(
-		default_factory=lambda: OneEuroFilterConfig(min_cutoff=0.8, beta=1.0, d_cutoff=1.0)
+		default_factory=lambda: OneEuroFilterConfig(
+			min_cutoff=0.8, beta=1.0, d_cutoff=1.0
+		)
 	)
 	wrist: WristMappingConfig = field(default_factory=WristMappingConfig)
 	gripper: GripperConfig = field(default_factory=GripperConfig)
@@ -187,7 +195,9 @@ class TeleopConfig:
 # 레포 루트 기준 상대 경로로 URDF를 찾습니다 (개인 PC 절대 경로 하드코딩 금지).
 # config.py 위치: {레포루트}/src/vr_teleop_modular_with_camera/vr_teleop/config.py
 _REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[3]
-URDF_PATH_DEFAULT: Final[str] = str(_REPO_ROOT / 'urdf' / 'so101_new_calib.urdf')
+URDF_PATH_DEFAULT: Final[str] = str(
+	_REPO_ROOT / 'urdf' / 'so101_new_calib.urdf'
+)
 
 RIGHT_ARM_CONFIG: Final[ArmConfig] = ArmConfig(
 	name='right_arm',
@@ -231,4 +241,7 @@ def get_arm_configs(mode: str) -> list[ArmConfig]:
 		return [LEFT_ARM_CONFIG]
 	if mode == 'dual':
 		return [LEFT_ARM_CONFIG, RIGHT_ARM_CONFIG]
-	raise ValueError(f'알 수 없는 모드: {mode!r} (\'left\'/\'right\'/\'dual\' 중 하나여야 합니다)')
+	raise ValueError(
+		f'알 수 없는 모드: {mode!r} '
+		'(\'left\'/\'right\'/\'dual\' 중 하나여야 합니다)'
+	)

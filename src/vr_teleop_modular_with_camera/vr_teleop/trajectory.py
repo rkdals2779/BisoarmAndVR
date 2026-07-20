@@ -17,7 +17,9 @@ import numpy as np
 
 
 class JointTrajectoryController:
-	def __init__(self, kp: float, max_vel_deg_s: float, max_acc_deg_s2: float) -> None:
+	def __init__(
+		self, kp: float, max_vel_deg_s: float, max_acc_deg_s2: float,
+	) -> None:
 		self.kp = kp
 		self.kd = 2.0 * np.sqrt(kp)  # 임계감쇠 조건
 		self.max_vel = max_vel_deg_s

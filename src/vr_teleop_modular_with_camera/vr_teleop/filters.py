@@ -11,7 +11,12 @@ import numpy as np
 
 
 class OneEuroFilter:
-	def __init__(self, min_cutoff: float = 1.0, beta: float = 0.0, d_cutoff: float = 1.0) -> None:
+	def __init__(
+		self,
+		min_cutoff: float = 1.0,
+		beta: float = 0.0,
+		d_cutoff: float = 1.0,
+	) -> None:
 		self.min_cutoff = min_cutoff
 		self.beta = beta
 		self.d_cutoff = d_cutoff

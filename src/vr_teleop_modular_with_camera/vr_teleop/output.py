@@ -24,7 +24,10 @@ class RobotOutput:
 		self.robot: SO101Follower | None = None
 
 	def connect(self) -> 'RobotOutput':
-		print(f'[{self.config.name}] 로봇 초기화 중... (port={self.config.robot_port})')
+		print(
+			f'[{self.config.name}] 로봇 초기화 중... '
+			f'(port={self.config.robot_port})'
+		)
 		# disable_torque_on_disconnect=True: disconnect()가 호출될 때
 		# lerobot이 모터 토크를 자동으로 꺼주도록 명시적으로 설정합니다.
 		# (lerobot 기본값도 True이지만, 설치된 lerobot 버전이나 환경에 따라
@@ -101,12 +104,15 @@ class ConsoleStatusDisplay:
 		pos = command.target_pos
 		self._parts[name] = (
 			f'[{name}] XYZ:[{pos[0]:.3f},{pos[1]:.3f},{pos[2]:.3f}] '
-			f'flex:{command.wrist_flex_deg:6.1f} roll:{command.wrist_roll_deg:6.1f} '
+			f'flex:{command.wrist_flex_deg:6.1f} '
+			f'roll:{command.wrist_roll_deg:6.1f} '
 			f'grip:{command.gripper_deg:5.1f}'
 		)
 
 	def set_camera(self, pan_deg: float, tilt_deg: float) -> None:
-		self._parts['camera'] = f'[camera] Pan:{pan_deg:6.1f} Tilt:{tilt_deg:6.1f}'
+		self._parts['camera'] = (
+			f'[camera] Pan:{pan_deg:6.1f} Tilt:{tilt_deg:6.1f}'
+		)
 
 	def flush(self) -> None:
 		if not self._parts:

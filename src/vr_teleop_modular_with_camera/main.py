@@ -24,7 +24,10 @@ def parse_args() -> argparse.Namespace:
 	parser = argparse.ArgumentParser(description='VR 텔레옵 컨트롤러')
 	parser.add_argument(
 		'--mode', choices=['left', 'right', 'dual'], default='dual',
-		help='left: 왼쪽 컨트롤러로 단일팔 / right: 오른쪽 컨트롤러로 단일팔 / dual: 양팔 동시 제어 (기본: dual)',
+		help=(
+			'left: 왼쪽 컨트롤러로 단일팔 / right: 오른쪽 컨트롤러로 단일팔'
+			' / dual: 양팔 동시 제어 (기본: dual)'
+		),
 	)
 	parser.add_argument(
 		'--hz', type=float, default=50.0,
@@ -43,7 +46,11 @@ def main() -> None:
 	if args.is_camera_disabled:
 		# camera가 붙어 있는 ArmConfig만 골라서 camera=None으로 교체 (원본
 		# 프리셋 자체는 건드리지 않도록 dataclasses.replace로 새 복사본 생성).
-		arms = [dataclasses.replace(arm, camera=None) if arm.camera is not None else arm for arm in arms]
+		arms = [
+			dataclasses.replace(arm, camera=None)
+			if arm.camera is not None else arm
+			for arm in arms
+		]
 
 	teleop_config = TeleopConfig(control_hz=args.hz, arms=arms)
 

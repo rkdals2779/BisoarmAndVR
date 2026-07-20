@@ -18,7 +18,9 @@ def extract_position(pose_matrix: Sequence[Sequence[float]]) -> np.ndarray:
 	return np.array([pose_matrix[0][3], pose_matrix[1][3], pose_matrix[2][3]])
 
 
-def extract_rotation_matrix(pose_matrix: Sequence[Sequence[float]]) -> np.ndarray:
+def extract_rotation_matrix(
+	pose_matrix: Sequence[Sequence[float]],
+) -> np.ndarray:
 	"""pyopenvr의 HmdMatrix34_t(3x4)에서 회전 성분(3x3)만 뽑아냅니다."""
 	return np.array([
 		[pose_matrix[0][0], pose_matrix[0][1], pose_matrix[0][2]],
@@ -40,7 +42,9 @@ def extract_pitch_roll(rel_rot_matrix: np.ndarray) -> tuple[float, float]:
     첫 번째/세 번째 각도는 ±180도 풀레인지가 나옵니다. yaw를 가운데로
     보내면 pitch(X, 첫 번째)와 roll(Z, 세 번째) 둘 다 풀레인지를 그대로 씁니다.
     """
-	pitch, _yaw, roll = ScipyRotation.from_matrix(rel_rot_matrix).as_euler('XYZ', degrees=False)
+	pitch, _yaw, roll = ScipyRotation.from_matrix(
+		rel_rot_matrix
+	).as_euler('XYZ', degrees=False)
 	return float(pitch), float(roll)
 
 
@@ -54,5 +58,7 @@ def extract_yaw_pitch(rel_rot_matrix: np.ndarray) -> tuple[float, float]:
     "버리는 축(roll=Z)"이 가운데로 가게 하고, yaw(Y, 첫 번째)와
     pitch(X, 두 번째) 둘 다 풀레인지를 그대로 씁니다.
     """
-	yaw, pitch, _roll = ScipyRotation.from_matrix(rel_rot_matrix).as_euler('YXZ', degrees=False)
+	yaw, pitch, _roll = ScipyRotation.from_matrix(
+		rel_rot_matrix
+	).as_euler('YXZ', degrees=False)
 	return float(yaw), float(pitch)

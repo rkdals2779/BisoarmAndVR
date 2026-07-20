@@ -53,7 +53,9 @@ class ArmTeleopController:
 	"""VR 컨트롤러 한쪽 + 로봇 한 대에 대한 텔레옵 계산 상태 머신.
     양팔 모드에서는 왼쪽/오른쪽 각각 독립된 인스턴스를 만들어 쓰면 됩니다."""
 
-	def __init__(self, arm_config: ArmConfig, kinematics: RobotKinematics) -> None:
+	def __init__(
+		self, arm_config: ArmConfig, kinematics: RobotKinematics,
+	) -> None:
 		self.config = arm_config
 		self.kinematics = kinematics
 
@@ -83,22 +85,34 @@ class ArmTeleopController:
 	# ------------------------------------------------------------
 	# 초기화 / 영점 조절
 	# ------------------------------------------------------------
-	def initialize_from_observation(self, observation: dict[str, float]) -> None:
+	def initialize_from_observation(
+		self, observation: dict[str, float],
+	) -> None:
 		"""로봇의 실제 현재 관절각으로 궤적/손목 영점을 초기화합니다.
         (추측값이 아니라 관측값으로 시작해야 시작 순간 로봇이 튀지 않습니다.)
         VR 캘리브레이션(calibrate)과는 별개로, 로봇에 연결한 직후 한 번만
         호출하면 됩니다."""
-		initial_arm_deg = np.array([observation[key] for key in self.config.ik.arm_joint_keys])
+		initial_arm_deg = np.array([
+			observation[key] for key in self.config.ik.arm_joint_keys
+		])
 		self.trajectory.reset(initial_arm_deg)
 
-		self._wrist_flex_home_deg = float(initial_arm_deg[self.kinematics.wrist_flex_arm_index])
-		self._wrist_roll_home_deg = float(initial_arm_deg[self.kinematics.wrist_roll_arm_index])
+		self._wrist_flex_home_deg = float(
+			initial_arm_deg[self.kinematics.wrist_flex_arm_index]
+		)
+		self._wrist_roll_home_deg = float(
+			initial_arm_deg[self.kinematics.wrist_roll_arm_index]
+		)
 
 		self.kinematics.print_joint_diagnostics(initial_arm_deg)
 
 		full_angles_rad = self.kinematics.zeros_full()
-		full_angles_rad[self.kinematics.active_mask] = np.radians(initial_arm_deg)
-		self._prev_ik_solution_full = self.kinematics.clip_to_bounds(full_angles_rad)
+		full_angles_rad[self.kinematics.active_mask] = (
+			np.radians(initial_arm_deg)
+		)
+		self._prev_ik_solution_full = (
+			self.kinematics.clip_to_bounds(full_angles_rad)
+		)
 
 	def is_calibrated(self) -> bool:
 		"""VR 컨트롤러 영점(home pose)이 설정되었는지 여부."""
@@ -114,7 +128,14 @@ class ArmTeleopController:
 	# ------------------------------------------------------------
 	# 매 프레임 계산
 	# ------------------------------------------------------------
-	def compute(self, vr_pos: np.ndarray, vr_rot: np.ndarray, trigger: float, t: float, dt: float) -> ArmCommand:
+	def compute(
+		self,
+		vr_pos: np.ndarray,
+		vr_rot: np.ndarray,
+		trigger: float,
+		t: float,
+		dt: float,
+	) -> ArmCommand:
 		"""calibrate()가 이미 호출된 상태에서 매 프레임 호출합니다."""
 		config = self.config
 
@@ -134,13 +155,25 @@ class ArmTeleopController:
 		#     IK를 거치지 않고 wrist_flex/wrist_roll에 직접 매핑합니다.
 		rel_rot = self._vr_home_rot.T @ vr_rot
 		pitch_raw, roll_raw = extract_pitch_roll(rel_rot)
-		pitch_filt, roll_filt = self.rot_filter.filter(np.array([pitch_raw, roll_raw]), t)
+		pitch_filt, roll_filt = self.rot_filter.filter(
+			np.array([pitch_raw, roll_raw]), t
+		)
 
 		wrist = config.wrist
-		wrist_flex_deg = self._wrist_flex_home_deg + wrist.pitch_sign * np.degrees(pitch_filt) * wrist.pitch_scale
-		wrist_roll_deg = self._wrist_roll_home_deg + wrist.roll_sign * np.degrees(roll_filt) * wrist.roll_scale
-		wrist_flex_deg = float(np.clip(wrist_flex_deg, *self.kinematics.wrist_flex_bounds_deg))
-		wrist_roll_deg = float(np.clip(wrist_roll_deg, *self.kinematics.wrist_roll_bounds_deg))
+		wrist_flex_deg = (
+			self._wrist_flex_home_deg
+			+ wrist.pitch_sign * np.degrees(pitch_filt) * wrist.pitch_scale
+		)
+		wrist_roll_deg = (
+			self._wrist_roll_home_deg
+			+ wrist.roll_sign * np.degrees(roll_filt) * wrist.roll_scale
+		)
+		wrist_flex_deg = float(np.clip(
+			wrist_flex_deg, *self.kinematics.wrist_flex_bounds_deg
+		))
+		wrist_roll_deg = float(np.clip(
+			wrist_roll_deg, *self.kinematics.wrist_roll_bounds_deg
+		))
 
 		# 3. IK - 위치만(3DOF). 실제로 움직였을 때만 재계산, 항상 이전 해로 시딩.
 		#    wrist_flex/wrist_roll은 seed에 "이번 프레임의 직접 계산값"을 넣어서
@@ -148,7 +181,8 @@ class ArmTeleopController:
 		#    False라서 최적화 대상은 아닙니다.
 		is_ik_needed = (
 			self._prev_target_pos is None
-			or np.linalg.norm(target_pos - self._prev_target_pos) > config.ik.skip_threshold_m
+			or np.linalg.norm(target_pos - self._prev_target_pos)
+			> config.ik.skip_threshold_m
 		)
 		seed = self.kinematics.build_seed(
 			self._prev_ik_solution_full,
@@ -158,7 +192,9 @@ class ArmTeleopController:
 
 		if is_ik_needed:
 			try:
-				joint_angles_full = self.kinematics.solve_position_ik(target_pos, seed)
+				joint_angles_full = self.kinematics.solve_position_ik(
+					target_pos, seed
+				)
 			except Exception as error:
 				print(f'\n[경고][{config.name}] IK 실패, 이전 관절각 유지: {error}')
 				joint_angles_full = seed
@@ -168,8 +204,12 @@ class ArmTeleopController:
 		# wrist_flex/wrist_roll은 IK와 완전히 무관하게, 매 프레임 항상 방금
 		# 계산한 값으로 덮어씁니다. (is_ik_needed가 False라서 위치 IK를 건너뛴
 		# 프레임에도 손목 회전만은 매번 새로 갱신됩니다.)
-		joint_angles_full[self.kinematics.wrist_flex_full_index] = np.radians(wrist_flex_deg)
-		joint_angles_full[self.kinematics.wrist_roll_full_index] = np.radians(wrist_roll_deg)
+		joint_angles_full[self.kinematics.wrist_flex_full_index] = (
+			np.radians(wrist_flex_deg)
+		)
+		joint_angles_full[self.kinematics.wrist_roll_full_index] = (
+			np.radians(wrist_roll_deg)
+		)
 
 		self._prev_ik_solution_full = joint_angles_full
 		self._prev_target_pos = target_pos
@@ -182,9 +222,14 @@ class ArmTeleopController:
 		arm_commanded_deg = self.trajectory.update(arm_target_deg, dt)
 
 		# 5. 그리퍼 - IK/회전 매핑과 무관하게 트리거로 직접 제어
-		gripper_deg = config.gripper.open_deg + trigger * (config.gripper.close_deg - config.gripper.open_deg)
+		gripper_deg = config.gripper.open_deg + trigger * (
+			config.gripper.close_deg - config.gripper.open_deg
+		)
 
-		joint_deg = {key: float(arm_commanded_deg[i]) for i, key in enumerate(config.ik.arm_joint_keys)}
+		joint_deg = {
+			key: float(arm_commanded_deg[i])
+			for i, key in enumerate(config.ik.arm_joint_keys)
+		}
 
 		return ArmCommand(
 			joint_deg=joint_deg,

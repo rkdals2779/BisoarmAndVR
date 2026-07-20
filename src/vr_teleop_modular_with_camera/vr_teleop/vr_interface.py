@@ -13,12 +13,18 @@ from typing import Final
 import openvr
 
 from .config import ControllerRole
-from .geometry import extract_position, extract_rotation_matrix, extract_pitch_roll, extract_yaw_pitch
+from .geometry import (
+	extract_pitch_roll,
+	extract_position,
+	extract_rotation_matrix,
+	extract_yaw_pitch,
+)
 
 # 다른 모듈에서 vr_interface를 통해서도 바로 쓸 수 있도록 재노출
 __all__ = [
 	'VRSystem', 'HMD_DEVICE_INDEX',
-	'extract_position', 'extract_rotation_matrix', 'extract_pitch_roll', 'extract_yaw_pitch',
+	'extract_position', 'extract_rotation_matrix',
+	'extract_pitch_roll', 'extract_yaw_pitch',
 ]
 
 _ROLE_MAP: Final[dict[ControllerRole, int]] = {
@@ -53,9 +59,12 @@ class VRSystem:
 	def get_controller_index(self, role: ControllerRole) -> int | None:
 		target_role = _ROLE_MAP[role]
 		for i in range(openvr.k_unMaxTrackedDeviceCount):
-			if self._vr.getTrackedDeviceClass(i) == openvr.TrackedDeviceClass_Controller:
-				if self._vr.getControllerRoleForTrackedDeviceIndex(i) == target_role:
-					return i
+			device_class = self._vr.getTrackedDeviceClass(i)
+			if device_class != openvr.TrackedDeviceClass_Controller:
+				continue
+			role = self._vr.getControllerRoleForTrackedDeviceIndex(i)
+			if role == target_role:
+				return i
 		return None
 
 	def get_all_poses(self) -> Sequence[openvr.TrackedDevicePose_t]:
@@ -74,7 +83,9 @@ class VRSystem:
 		return float(state.rAxis[1].x)
 
 	@staticmethod
-	def get_hmd_pose(poses: Sequence[openvr.TrackedDevicePose_t]) -> openvr.TrackedDevicePose_t:
+	def get_hmd_pose(
+		poses: Sequence[openvr.TrackedDevicePose_t],
+	) -> openvr.TrackedDevicePose_t:
 		"""get_all_poses()로 이미 받아온 poses 배열에서 HMD 항목만 꺼내는
         편의 함수 (카메라 헤드 추종용). 별도의 openvr 호출은 필요 없습니다."""
 		return poses[HMD_DEVICE_INDEX]

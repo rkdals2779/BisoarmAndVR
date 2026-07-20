@@ -40,7 +40,12 @@ from .trajectory import JointTrajectoryController
 # ============================================================
 # 공유 시리얼 연결 탐색
 # ============================================================
-def find_shared_serial(obj: object, _seen: set[int] | None = None, _depth: int = 0, _max_depth: int = 6) -> serial.Serial | None:
+def find_shared_serial(
+	obj: object,
+	_seen: set[int] | None = None,
+	_depth: int = 0,
+	_max_depth: int = 6,
+) -> serial.Serial | None:
 	"""
     obj(예: lerobot의 SO101Follower 인스턴스)의 속성들을 재귀적으로 뒤져서
     이미 열려 있는 serial.Serial 인스턴스를 찾아 반환합니다.
@@ -100,7 +105,10 @@ class SharedFeetechWriter:
 		length = 9
 		instruction = 0x03
 		address = 0x2A  # Target Position Register
-		checksum = ~(motor_id + length + instruction + address + position_low + position_high + 0 + 0 + 0 + 0) & 0xFF
+		checksum = ~(
+			motor_id + length + instruction + address
+			+ position_low + position_high + 0 + 0 + 0 + 0
+		) & 0xFF
 
 		packet = bytearray([
 			0xFF, 0xFF, motor_id, length, instruction, address,
@@ -116,7 +124,10 @@ class SharedFeetechWriter:
 		value = 0x00
 		checksum = ~(motor_id + length + instruction + address + value) & 0xFF
 
-		packet = bytearray([0xFF, 0xFF, motor_id, length, instruction, address, value, checksum])
+		packet = bytearray([
+			0xFF, 0xFF, motor_id, length, instruction, address,
+			value, checksum,
+		])
 		self.serial_conn.write(packet)
 
 	def flush_input(self) -> None:
@@ -150,7 +161,9 @@ class CameraHeadController:
     compute)을 따르므로 app.py의 메인 루프에 그대로 끼워 넣을 수 있습니다.
     """
 
-	def __init__(self, config: CameraHeadConfig, writer: SharedFeetechWriter) -> None:
+	def __init__(
+		self, config: CameraHeadConfig, writer: SharedFeetechWriter,
+	) -> None:
 		self.config = config
 		self.writer = writer
 
@@ -174,22 +187,40 @@ class CameraHeadController:
 	def calibrate(self, hmd_rot: np.ndarray) -> None:
 		"""이번 HMD 방향을 영점으로 저장하고, 모터를 홈 포지션으로 보냅니다."""
 		self._home_rot = hmd_rot.copy()
-		self.writer.write_position(self.config.pan_motor_id, self.config.pan_home_deg)
-		self.writer.write_position(self.config.tilt_motor_id, self.config.tilt_home_deg)
+		self.writer.write_position(
+			self.config.pan_motor_id, self.config.pan_home_deg
+		)
+		self.writer.write_position(
+			self.config.tilt_motor_id, self.config.tilt_home_deg
+		)
 
-	def compute_and_send(self, hmd_rot: np.ndarray, t: float, dt: float) -> tuple[float, float]:
+	def compute_and_send(
+		self, hmd_rot: np.ndarray, t: float, dt: float,
+	) -> tuple[float, float]:
 		"""calibrate()가 이미 호출된 상태에서 매 프레임 호출합니다.
         반환값은 (pan_deg, tilt_deg) - 콘솔 상태 표시용."""
 		config = self.config
 
 		rel_rot = self._home_rot.T @ hmd_rot
 		yaw_raw, pitch_raw = extract_yaw_pitch(rel_rot)
-		yaw_filt, pitch_filt = self.rot_filter.filter(np.array([yaw_raw, pitch_raw]), t)
+		yaw_filt, pitch_filt = self.rot_filter.filter(
+			np.array([yaw_raw, pitch_raw]), t
+		)
 
-		pan_target = config.pan_home_deg + config.yaw_sign * np.degrees(yaw_filt) * config.yaw_scale
-		tilt_target = config.tilt_home_deg + config.pitch_sign * np.degrees(pitch_filt) * config.pitch_scale
-		pan_target = float(np.clip(pan_target, config.pan_min_deg, config.pan_max_deg))
-		tilt_target = float(np.clip(tilt_target, config.tilt_min_deg, config.tilt_max_deg))
+		pan_target = (
+			config.pan_home_deg
+			+ config.yaw_sign * np.degrees(yaw_filt) * config.yaw_scale
+		)
+		tilt_target = (
+			config.tilt_home_deg
+			+ config.pitch_sign * np.degrees(pitch_filt) * config.pitch_scale
+		)
+		pan_target = float(np.clip(
+			pan_target, config.pan_min_deg, config.pan_max_deg
+		))
+		tilt_target = float(np.clip(
+			tilt_target, config.tilt_min_deg, config.tilt_max_deg
+		))
 
 		smoothed = self.trajectory.update([pan_target, tilt_target], dt)
 		self.writer.write_position(config.pan_motor_id, float(smoothed[0]))

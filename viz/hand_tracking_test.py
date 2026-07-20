@@ -45,8 +45,16 @@ def build_action_manifest(target_dir: Path) -> Path:
 	manifest = {
 		'action_sets': [{'name': ACTION_SET_PATH, 'usage': 'leftright'}],
 		'actions': [
-			{'name': ACTION_LEFT, 'type': 'skeleton', 'skeleton': '/skeleton/hand/left'},
-			{'name': ACTION_RIGHT, 'type': 'skeleton', 'skeleton': '/skeleton/hand/right'},
+			{
+				'name': ACTION_LEFT,
+				'type': 'skeleton',
+				'skeleton': '/skeleton/hand/left',
+			},
+			{
+				'name': ACTION_RIGHT,
+				'type': 'skeleton',
+				'skeleton': '/skeleton/hand/right',
+			},
 		],
 		'default_bindings': [],
 		'localization': [
@@ -93,7 +101,8 @@ def describe_tracked_devices(vr_system: 'openvr.IVRSystem') -> None:
 		except Exception:
 			model = '?'
 		print(
-			f'  장치 #{i:>2}  class={class_names.get(device_class, device_class):<18} '
+			f'  장치 #{i:>2}  '
+			f'class={class_names.get(device_class, device_class):<18} '
 			f'connected={is_connected}  model={model}'
 		)
 	if not has_found_device:
@@ -101,10 +110,17 @@ def describe_tracked_devices(vr_system: 'openvr.IVRSystem') -> None:
 	print('-' * 60)
 
 
-def describe_action_origins(vr_input: 'openvr.IVRInput', action_set_handle: int, action_handle: int, label: str) -> None:
+def describe_action_origins(
+	vr_input: 'openvr.IVRInput',
+	action_set_handle: int,
+	action_handle: int,
+	label: str,
+) -> None:
 	"""이 액션이 실제로 어떤 입력 소스(장치)에 바인딩되어 있는지 확인."""
 	try:
-		origins = vr_input.getActionOrigins(action_set_handle, action_handle, 16)
+		origins = vr_input.getActionOrigins(
+			action_set_handle, action_handle, 16
+		)
 	except Exception as error:
 		print(f'    [{label}] getActionOrigins 호출 실패: {error}')
 		return
@@ -183,7 +199,9 @@ def main() -> None:
 				for hand in ('left', 'right'):
 					action_handle = action_handles[hand]
 					try:
-						action_data = vr_input.getSkeletalActionData(action_handle)
+						action_data = vr_input.getSkeletalActionData(
+							action_handle
+						)
 					except Exception as error:
 						print(f'  [{hand}] getSkeletalActionData 오류: {error}')
 						continue
@@ -211,7 +229,9 @@ def main() -> None:
 						if bone_index < len(bones):
 							position = bones[bone_index].position.v
 							sample_strs.append(
-								f'{name}=({position[0]:+.3f}, {position[1]:+.3f}, {position[2]:+.3f})'
+								f'{name}=({position[0]:+.3f}, '
+								f'{position[1]:+.3f}, '
+								f'{position[2]:+.3f})'
 							)
 					print(
 						f'  [{hand}] bActive=True boneCount={bone_count}  '

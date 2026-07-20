@@ -38,7 +38,10 @@ class _ArmRuntime:
 class TeleopApp:
 	def __init__(self, teleop_config: TeleopConfig) -> None:
 		if not teleop_config.arms:
-			raise ValueError('TeleopConfig.arms가 비어 있습니다. 최소 1개의 ArmConfig가 필요합니다.')
+			raise ValueError(
+				'TeleopConfig.arms가 비어 있습니다. '
+				'최소 1개의 ArmConfig가 필요합니다.'
+			)
 		self.config = teleop_config
 		self.vr_system = VRSystem()
 		self.arms: list[_ArmRuntime] = []
@@ -68,7 +71,10 @@ class TeleopApp:
 			self.vr_system.connect()
 
 			for arm_config in self.config.arms:
-				print(f'\n---- [{arm_config.name}] ({arm_config.controller_role.value} 컨트롤러) 초기화 ----')
+				print(
+					f'\n---- [{arm_config.name}] '
+					f'({arm_config.controller_role.value} 컨트롤러) 초기화 ----'
+				)
 				kinematics = RobotKinematics(
 					arm_config.ik,
 					arm_config.wrist.wrist_flex_key,
@@ -80,7 +86,9 @@ class TeleopApp:
 				# 연결 성공 = 토크 ON 시점. 이후 단계가 실패하더라도
 				# shutdown()이 이 팔을 반드시 찾을 수 있도록 controller가
 				# 준비되기 "전에" 먼저 등록합니다.
-				runtime = _ArmRuntime(config=arm_config, kinematics=kinematics, output=output)
+				runtime = _ArmRuntime(
+					config=arm_config, kinematics=kinematics, output=output
+				)
 				self.arms.append(runtime)
 
 				controller = ArmTeleopController(arm_config, kinematics)
@@ -88,9 +96,14 @@ class TeleopApp:
 				runtime.controller = controller
 
 				if arm_config.camera is not None:
-					print(f'[{arm_config.name}] 카메라 헤드 초기화 중... (공유 포트: {arm_config.robot_port})')
+					print(
+						f'[{arm_config.name}] 카메라 헤드 초기화 중... '
+						f'(공유 포트: {arm_config.robot_port})'
+					)
 					camera_writer = output.get_camera_writer()
-					self.camera_head = CameraHeadController(arm_config.camera, camera_writer)
+					self.camera_head = CameraHeadController(
+						arm_config.camera, camera_writer
+					)
 
 			return self
 		except BaseException:
@@ -123,16 +136,24 @@ class TeleopApp:
 				if self.camera_head is not None:
 					hmd_pose = poses[HMD_DEVICE_INDEX]
 					if hmd_pose.bPoseIsValid:
-						hmd_rot = self.vr_system.extract_rotation_matrix(hmd_pose.mDeviceToAbsoluteTracking)
+						hmd_rot = self.vr_system.extract_rotation_matrix(
+							hmd_pose.mDeviceToAbsoluteTracking
+						)
 						if not self.camera_head.is_calibrated():
 							self.camera_head.calibrate(hmd_rot)
 						else:
-							pan_deg, tilt_deg = self.camera_head.compute_and_send(hmd_rot, loop_start, dt)
+							pan_deg, tilt_deg = (
+								self.camera_head.compute_and_send(
+									hmd_rot, loop_start, dt
+								)
+							)
 							self.display.set_camera(pan_deg, tilt_deg)
 							has_sent_any = True
 
 				for runtime in self.arms:
-					runtime.device_index = self.vr_system.get_controller_index(runtime.config.controller_role)
+					runtime.device_index = self.vr_system.get_controller_index(
+						runtime.config.controller_role
+					)
 					if runtime.device_index is None:
 						continue
 
@@ -150,8 +171,12 @@ class TeleopApp:
 						runtime.controller.calibrate(vr_pos, vr_rot)
 						continue
 
-					trigger = self.vr_system.get_trigger_value(runtime.device_index)
-					command = runtime.controller.compute(vr_pos, vr_rot, trigger, loop_start, dt)
+					trigger = self.vr_system.get_trigger_value(
+						runtime.device_index
+					)
+					command = runtime.controller.compute(
+						vr_pos, vr_rot, trigger, loop_start, dt
+					)
 					runtime.output.send(command)
 					self.display.set(runtime.config.name, command)
 					has_sent_any = True

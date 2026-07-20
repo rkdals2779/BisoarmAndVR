@@ -3,7 +3,11 @@ import time
 import serial
 
 
-def scan_feetech_motors(port: str = '/dev/ttyACM0', baudrate: int = 1000000, max_id: int = 15) -> None:
+def scan_feetech_motors(
+	port: str = '/dev/ttyACM0',
+	baudrate: int = 1000000,
+	max_id: int = 15,
+) -> None:
 	print(f'🔍 포트 {port}에서 1부터 {max_id}까지 모터 ID를 스캔합니다... (통신속도: {baudrate})')
 
 	try:
@@ -23,7 +27,9 @@ def scan_feetech_motors(port: str = '/dev/ttyACM0', baudrate: int = 1000000, max
 		# 체크섬 계산: ~(ID + Length + Instruction)의 하위 8비트
 		checksum = (~(motor_id + length + instruction)) & 0xFF
 
-		packet = bytearray([0xFF, 0xFF, motor_id, length, instruction, checksum])
+		packet = bytearray([
+			0xFF, 0xFF, motor_id, length, instruction, checksum,
+		])
 
 		serial_conn.reset_input_buffer()
 		serial_conn.write(packet)
