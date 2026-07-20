@@ -109,7 +109,10 @@ def describe_action_origins(vr_input: 'openvr.IVRInput', action_set_handle: int,
 		print(f'    [{label}] getActionOrigins 호출 실패: {error}')
 		return
 
-	valid_origins = [o for origin in origins if origin != openvr.k_ulInvalidInputValueHandle]
+	valid_origins = [
+		origin for origin in origins
+		if origin != openvr.k_ulInvalidInputValueHandle
+	]
 	if not valid_origins:
 		print(f'    [{label}] ⚠ 바인딩된 입력 소스가 없습니다 (binding 문제일 가능성 높음)')
 		return
