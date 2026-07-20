@@ -1,5 +1,6 @@
-import serial
 import time
+
+import serial
 
 
 def scan_feetech_motors(port: str = '/dev/ttyACM0', baudrate: int = 1000000, max_id: int = 15) -> None:
