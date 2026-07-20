@@ -24,6 +24,11 @@ lerobot-teleoperate와 완전히 동일하게 동작한다 - 관측에 프레임
 포함되고 display_data=true면 rerun에 표시된다. 카메라를 포함한 전체
 실행 커맨드는 README.md에 있다 (복사해서 그대로 실행 가능).
 
+팔 조종 소스 선택 (--teleop.type):
+	bi_so_leader  - 리더암으로 팔로워암 조종 (lerobot 기본)
+	bi_vr_leader  - VR 컨트롤러로 팔로워암 조종 (자체 구현,
+	                컨트롤러 위치 델타 -> IK, 트리거 -> 그리퍼)
+
 카메라 헤드 모드: none(기본) / fixed / keyboard(방향키) / vr(HMD 추종).
 자세한 옵션과 의존성은 README.md 참고.
 """
@@ -42,7 +47,7 @@ from lerobot.processor import (
 )
 from lerobot.robots import Robot, make_robot_from_config
 from lerobot.scripts.lerobot_teleoperate import TeleoperateConfig
-from lerobot.teleoperators import Teleoperator, make_teleoperator_from_config
+from lerobot.teleoperators import Teleoperator
 from lerobot.utils.import_utils import register_third_party_plugins
 from lerobot.utils.robot_utils import precise_sleep
 from lerobot.utils.utils import init_logging, move_cursor_up
@@ -50,8 +55,11 @@ from lerobot.utils.utils import init_logging, move_cursor_up
 from camera_head import (
 	CameraHeadConfig,
 	CameraHeadControllerBase,
+	CameraHeadMode,
 	make_camera_head_controller,
 )
+from teleop_factory import make_arm_teleoperator, make_vr_system
+from vr_arm.config import BiVrLeaderConfig
 
 try:
 	# lerobot >= 0.6: rerun/foxglove 백엔드 선택형 시각화 API
@@ -222,7 +230,15 @@ def teleoperate_with_camera_head(cfg: TeleopWithCameraHeadConfig) -> None:
 		else cfg.display_compressed_images
 	)
 
-	teleop = make_teleoperator_from_config(cfg.teleop)
+	# VR 팔 + VR 카메라 헤드가 동시에 켜지면 SteamVR 세션을 하나만
+	# 만들어 공유한다 (openvr.init은 프로세스당 1회).
+	is_vr_arm = isinstance(cfg.teleop, BiVrLeaderConfig)
+	is_vr_head = cfg.camera_head.mode == CameraHeadMode.VR
+	shared_vr_system = (
+		make_vr_system() if (is_vr_arm and is_vr_head) else None
+	)
+
+	teleop = make_arm_teleoperator(cfg.teleop, vr_system=shared_vr_system)
 	robot = make_robot_from_config(cfg.robot)
 	(
 		teleop_action_processor,
@@ -230,6 +246,8 @@ def teleoperate_with_camera_head(cfg: TeleopWithCameraHeadConfig) -> None:
 		robot_observation_processor,
 	) = make_default_processors()
 
+	if shared_vr_system is not None:
+		shared_vr_system.connect()
 	teleop.connect()
 	robot.connect()
 
@@ -237,9 +255,15 @@ def teleoperate_with_camera_head(cfg: TeleopWithCameraHeadConfig) -> None:
 	try:
 		# 카메라 헤드는 로봇 connect() 이후에 만들어야 한다 - 팔로워가
 		# 열어놓은 시리얼 버스를 공유하기 때문이다.
-		camera_head = make_camera_head_controller(cfg.camera_head, robot)
+		camera_head = make_camera_head_controller(
+			cfg.camera_head, robot, vr_system=shared_vr_system
+		)
 		if camera_head is not None:
 			camera_head.start()
+
+		# VR 팔 텔레옵은 로봇의 실제 관절각으로 영점을 초기화해야 한다.
+		if hasattr(teleop, 'initialize_from_observation'):
+			teleop.initialize_from_observation(robot.get_observation())
 
 		teleop_with_camera_head_loop(
 			teleop=teleop,
@@ -265,6 +289,8 @@ def teleoperate_with_camera_head(cfg: TeleopWithCameraHeadConfig) -> None:
 			shutdown_visualization(display_mode)
 		teleop.disconnect()
 		robot.disconnect()
+		if shared_vr_system is not None:
+			shared_vr_system.shutdown()
 
 
 def main() -> None:
