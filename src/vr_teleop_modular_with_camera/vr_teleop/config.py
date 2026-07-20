@@ -18,6 +18,7 @@ control.py/app.py는 팔이 1개든 2개든 완전히 동일한 코드로 동작
 
 from dataclasses import dataclass, field
 from enum import Enum
+from pathlib import Path
 from typing import List, Optional, Tuple
 
 import numpy as np
@@ -183,7 +184,10 @@ class TeleopConfig:
 # 양팔 모드를 쓸 게 아니라면 LEFT_ARM_CONFIG는 그대로 둬도 무방합니다
 # (get_arm_configs("right")를 쓰면 참조되지 않습니다).
 # ============================================================
-URDF_PATH_DEFAULT = "/home/roboseasy/shin_ws/BisoarmAndVR/urdf/so101_new_calib.urdf"
+# 레포 루트 기준 상대 경로로 URDF를 찾습니다 (개인 PC 절대 경로 하드코딩 금지).
+# config.py 위치: {레포루트}/src/vr_teleop_modular_with_camera/vr_teleop/config.py
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+URDF_PATH_DEFAULT = str(_REPO_ROOT / "urdf" / "so101_new_calib.urdf")
 
 RIGHT_ARM_CONFIG = ArmConfig(
     name="right_arm",
