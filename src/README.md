@@ -67,7 +67,7 @@ RIGHT_ARM_CONFIG = ArmConfig(
     robot_id="skm_right_follower",
     robot_port="/dev/ttyACM1",
     home_pos=np.array([0.2, 0.0, 0.1]),
-    ik=IKConfig(urdf_path="/path/to/BisoarmAndVR/urdf/so101_new_calib.urdf"),
+    ik=IKConfig(urdf_path="/path/to/so101_new_calib.urdf"),
 )
 
 LEFT_ARM_CONFIG = ArmConfig(
