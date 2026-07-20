@@ -65,7 +65,7 @@ def find_shared_serial(obj, _seen: Optional[set] = None, _depth: int = 0, _max_d
 	if isinstance(obj, serial.Serial):
 		return obj if obj.is_open else None
 
-	obj_dict = getattr(obj, "__dict__", None)
+	obj_dict = getattr(obj, '__dict__', None)
 	if not obj_dict:
 		return None
 

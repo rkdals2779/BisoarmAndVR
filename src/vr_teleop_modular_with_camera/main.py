@@ -20,18 +20,18 @@ from vr_teleop.config import TeleopConfig, get_arm_configs
 
 
 def parse_args():
-	parser = argparse.ArgumentParser(description="VR 텔레옵 컨트롤러")
+	parser = argparse.ArgumentParser(description='VR 텔레옵 컨트롤러')
 	parser.add_argument(
-		"--mode", choices=["left", "right", "dual"], default="dual",
-		help="left: 왼쪽 컨트롤러로 단일팔 / right: 오른쪽 컨트롤러로 단일팔 / dual: 양팔 동시 제어 (기본: dual)",
+		'--mode', choices=['left', 'right', 'dual'], default='dual',
+		help='left: 왼쪽 컨트롤러로 단일팔 / right: 오른쪽 컨트롤러로 단일팔 / dual: 양팔 동시 제어 (기본: dual)',
 	)
 	parser.add_argument(
-		"--hz", type=float, default=50.0,
-		help="제어 루프 주파수 Hz (기본: 50)",
+		'--hz', type=float, default=50.0,
+		help='제어 루프 주파수 Hz (기본: 50)',
 	)
 	parser.add_argument(
-		"--no-camera", action="store_true",
-		help="왼팔에 카메라 pan/tilt 모터(id 7/8)가 물려 있지 않을 때 카메라 추종을 끕니다.",
+		'--no-camera', action='store_true',
+		help='왼팔에 카메라 pan/tilt 모터(id 7/8)가 물려 있지 않을 때 카메라 추종을 끕니다.',
 	)
 	return parser.parse_args()
 
@@ -75,8 +75,8 @@ def main():
 		# 보기 싫은 스택 트레이스 없이 조용히 끝내기만 하면 됩니다.
 		# (run() 도중 들어온 Ctrl+C는 run() 내부에서 이미 메시지를 출력하고
 		# shutdown()까지 마친 뒤 정상적으로 리턴하므로 이 분기까지 오지 않습니다.)
-		print("\n[시스템] 초기화 단계에서 종료 신호를 받아 중단했습니다.")
+		print('\n[시스템] 초기화 단계에서 종료 신호를 받아 중단했습니다.')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
 	main()

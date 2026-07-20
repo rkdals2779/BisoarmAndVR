@@ -161,7 +161,7 @@ class ArmTeleopController:
 			try:
 				joint_angles_full = self.kin.solve_position_ik(target_pos, seed)
 			except Exception as e:
-				print(f"\n[경고][{cfg.name}] IK 실패, 이전 관절각 유지: {e}")
+				print(f'\n[경고][{cfg.name}] IK 실패, 이전 관절각 유지: {e}')
 				joint_angles_full = seed
 		else:
 			joint_angles_full = seed

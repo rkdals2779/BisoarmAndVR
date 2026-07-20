@@ -26,8 +26,8 @@ import numpy as np
 
 class ControllerRole(Enum):
 	"""VR 컨트롤러가 왼손용인지 오른손용인지 (openvr의 TrackedControllerRole과 대응)"""
-	LEFT = "left"
-	RIGHT = "right"
+	LEFT = 'left'
+	RIGHT = 'right'
 
 
 # ============================================================
@@ -61,8 +61,8 @@ class WristMappingConfig:
 
     반대로 움직이면 해당 *_sign 값을 -1.0으로 뒤집으세요.
     """
-	wrist_flex_key: str = "wrist_flex.pos"
-	wrist_roll_key: str = "wrist_roll.pos"
+	wrist_flex_key: str = 'wrist_flex.pos'
+	wrist_roll_key: str = 'wrist_roll.pos'
 	pitch_scale: float = 1.0            # 컨트롤러 pitch -> wrist_flex 배율 (1.0 = 1:1)
 	roll_scale: float = 1.0             # 컨트롤러 roll -> wrist_roll 배율 (1.0 = 1:1)
 	pitch_sign: float = -1.0            # wrist_flex 반대로 움직이면 부호를 다시 뒤집으세요
@@ -75,7 +75,7 @@ class WristMappingConfig:
 @dataclass
 class GripperConfig:
 	"""그리퍼는 IK/회전 매핑과 완전히 분리해서 VR 트리거로 직접 제어합니다."""
-	key: str = "gripper.pos"
+	key: str = 'gripper.pos'
 	open_deg: float = 90.0
 	close_deg: float = 0.0   # 실제 그리퍼 가동 범위를 확인 후 조정하세요
 
@@ -129,11 +129,11 @@ class IKConfig:
 	urdf_path: str
 	skip_threshold_m: float = 0.001
 	arm_joint_keys: List[str] = field(default_factory=lambda: [
-		"shoulder_pan.pos",
-		"shoulder_lift.pos",
-		"elbow_flex.pos",
-		"wrist_flex.pos",
-		"wrist_roll.pos",
+		'shoulder_pan.pos',
+		'shoulder_lift.pos',
+		'elbow_flex.pos',
+		'wrist_flex.pos',
+		'wrist_roll.pos',
 	])
 
 
@@ -187,22 +187,22 @@ class TeleopConfig:
 # 레포 루트 기준 상대 경로로 URDF를 찾습니다 (개인 PC 절대 경로 하드코딩 금지).
 # config.py 위치: {레포루트}/src/vr_teleop_modular_with_camera/vr_teleop/config.py
 _REPO_ROOT = Path(__file__).resolve().parents[3]
-URDF_PATH_DEFAULT = str(_REPO_ROOT / "urdf" / "so101_new_calib.urdf")
+URDF_PATH_DEFAULT = str(_REPO_ROOT / 'urdf' / 'so101_new_calib.urdf')
 
 RIGHT_ARM_CONFIG = ArmConfig(
-	name="right_arm",
+	name='right_arm',
 	controller_role=ControllerRole.RIGHT,
-	robot_id="skm_right_follower",
-	robot_port="/dev/ttyACM1",
+	robot_id='skm_right_follower',
+	robot_port='/dev/ttyACM1',
 	home_pos=np.array([0.2, 0.0, 0.1]),
 	ik=IKConfig(urdf_path=URDF_PATH_DEFAULT),
 )
 
 LEFT_ARM_CONFIG = ArmConfig(
-	name="left_arm",
+	name='left_arm',
 	controller_role=ControllerRole.LEFT,
-	robot_id="skm_left_follower",
-	robot_port="/dev/ttyACM0",
+	robot_id='skm_left_follower',
+	robot_port='/dev/ttyACM0',
 	home_pos=np.array([0.2, 0.0, 0.1]),
 	ik=IKConfig(urdf_path=URDF_PATH_DEFAULT),
 	# 왼팔 로봇이 오른팔과 물리적으로 거울 대칭 장착된 경우가 많습니다.
@@ -225,10 +225,10 @@ def get_arm_configs(mode: str) -> List[ArmConfig]:
         "dual"  -> 양쪽 컨트롤러로 로봇 2대를 동시에 제어 (양손 텔레옵)
     """
 	mode = mode.lower()
-	if mode == "right":
+	if mode == 'right':
 		return [RIGHT_ARM_CONFIG]
-	if mode == "left":
+	if mode == 'left':
 		return [LEFT_ARM_CONFIG]
-	if mode == "dual":
+	if mode == 'dual':
 		return [LEFT_ARM_CONFIG, RIGHT_ARM_CONFIG]
-	raise ValueError(f"알 수 없는 모드: {mode!r} ('left'/'right'/'dual' 중 하나여야 합니다)")
+	raise ValueError(f'알 수 없는 모드: {mode!r} (\'left\'/\'right\'/\'dual\' 중 하나여야 합니다)')

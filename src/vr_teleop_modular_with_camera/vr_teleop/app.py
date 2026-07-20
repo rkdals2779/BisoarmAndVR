@@ -39,7 +39,7 @@ class _ArmRuntime:
 class TeleopApp:
 	def __init__(self, teleop_config: TeleopConfig):
 		if not teleop_config.arms:
-			raise ValueError("TeleopConfig.arms가 비어 있습니다. 최소 1개의 ArmConfig가 필요합니다.")
+			raise ValueError('TeleopConfig.arms가 비어 있습니다. 최소 1개의 ArmConfig가 필요합니다.')
 		self.config = teleop_config
 		self.vr_system = VRSystem()
 		self.arms: List[_ArmRuntime] = []
@@ -56,7 +56,7 @@ class TeleopApp:
 		self._shutdown_done = False
 
 	# ------------------------------------------------------------
-	def setup(self) -> "TeleopApp":
+	def setup(self) -> 'TeleopApp':
 		# 이 메서드 전체를 try/except로 감싸는 이유: 로봇 연결(토크 ON)은
 		# 팔마다 순서대로 일어나는데, 예를 들어 왼팔이 먼저 연결된 뒤
 		# 오른팔 연결이나 카메라 시리얼 공유 탐색, IK 초기화 등 "그 다음
@@ -69,7 +69,7 @@ class TeleopApp:
 			self.vr_system.connect()
 
 			for arm_cfg in self.config.arms:
-				print(f"\n---- [{arm_cfg.name}] ({arm_cfg.controller_role.value} 컨트롤러) 초기화 ----")
+				print(f'\n---- [{arm_cfg.name}] ({arm_cfg.controller_role.value} 컨트롤러) 초기화 ----')
 				kin = RobotKinematics(
 					arm_cfg.ik,
 					arm_cfg.wrist.wrist_flex_key,
@@ -89,7 +89,7 @@ class TeleopApp:
 				runtime.controller = controller
 
 				if arm_cfg.camera is not None:
-					print(f"[{arm_cfg.name}] 카메라 헤드 초기화 중... (공유 포트: {arm_cfg.robot_port})")
+					print(f'[{arm_cfg.name}] 카메라 헤드 초기화 중... (공유 포트: {arm_cfg.robot_port})')
 					camera_writer = output.get_camera_writer()
 					self.camera_head = CameraHeadController(arm_cfg.camera, camera_writer)
 
@@ -98,7 +98,7 @@ class TeleopApp:
 			# BaseException을 잡는 이유: Ctrl+C(KeyboardInterrupt)는
 			# Exception이 아니라 BaseException을 상속하므로, 일반
 			# except Exception으로는 setup() 도중의 Ctrl+C를 못 잡습니다.
-			print("\n[시스템] 초기화 도중 중단/오류 발생 - 연결된 로봇의 토크를 해제합니다.")
+			print('\n[시스템] 초기화 도중 중단/오류 발생 - 연결된 로봇의 토크를 해제합니다.')
 			self.shutdown()
 			raise
 
@@ -164,7 +164,7 @@ class TeleopApp:
 				time.sleep(max(0.0, dt_nominal - elapsed))
 
 		except KeyboardInterrupt:
-			print("\n\n[시스템] 안전하게 종료합니다.")
+			print('\n\n[시스템] 안전하게 종료합니다.')
 		finally:
 			self.shutdown()
 
@@ -183,20 +183,20 @@ class TeleopApp:
 		# 그 전에 마지막 패킷(토크 해제)을 먼저 내보내야 합니다.
 		if self.camera_head is not None:
 			try:
-				print("[camera] 카메라 모터 토크 해제 중...")
+				print('[camera] 카메라 모터 토크 해제 중...')
 				self.camera_head.release_torque()
 				time.sleep(0.02)
 			except Exception as e:
-				print(f"[경고] 카메라 헤드 토크 해제 중 오류: {e}")
+				print(f'[경고] 카메라 헤드 토크 해제 중 오류: {e}')
 
 		for runtime in self.arms:
 			try:
-				print(f"[{runtime.config.name}] 모터 토크 해제 중...")
+				print(f'[{runtime.config.name}] 모터 토크 해제 중...')
 				runtime.output.disconnect()
 			except Exception as e:
-				print(f"[경고] [{runtime.config.name}] 로봇 연결 해제 중 오류: {e}")
+				print(f'[경고] [{runtime.config.name}] 로봇 연결 해제 중 오류: {e}')
 
 		try:
 			self.vr_system.shutdown()
 		except Exception as e:
-			print(f"[경고] VR 시스템 종료 중 오류: {e}")
+			print(f'[경고] VR 시스템 종료 중 오류: {e}')

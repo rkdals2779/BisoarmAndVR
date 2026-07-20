@@ -28,11 +28,11 @@ pygame.display.set_mode((100, 100), DOUBLEBUF | OPENGL | HIDDEN)
 try:
 	openvr.init(openvr.VRApplication_Overlay)
 except openvr.OpenVRError as e:
-	print(f"OpenVR 초기화 실패: {e}")
+	print(f'OpenVR 초기화 실패: {e}')
 	sys.exit(1)
 
 vr_overlay = openvr.IVROverlay()
-overlay_handle = vr_overlay.createOverlay("RobotCam", "Robot Camera View")
+overlay_handle = vr_overlay.createOverlay('RobotCam', 'Robot Camera View')
 
 # 3. 오버레이 위치 및 크기 설정 (HMD 기준 정중앙 고정, 눈앞 1미터)
 mat = openvr.HmdMatrix34_t()
@@ -51,7 +51,7 @@ vr_overlay.showOverlay(overlay_handle)
 # 4. 카메라 및 OpenGL 텍스처 설정
 cap = cv2.VideoCapture(4)  # /dev/video4
 if not cap.isOpened():
-	print("카메라를 열 수 없습니다. /dev/video4 연결을 확인하세요.")
+	print('카메라를 열 수 없습니다. /dev/video4 연결을 확인하세요.')
 	sys.exit(1)
 
 tex_id = glGenTextures(1)
@@ -59,7 +59,7 @@ glBindTexture(GL_TEXTURE_2D, tex_id)
 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 
-print("VR 오버레이 스트리밍 시작... (종료하려면 Ctrl+C)")
+print('VR 오버레이 스트리밍 시작... (종료하려면 Ctrl+C)')
 
 # 5. 메인 루프 (카메라 프레임 -> OpenGL 텍스처 -> OpenVR 오버레이)
 try:
@@ -90,7 +90,7 @@ try:
 		time.sleep(0.016)
 
 except KeyboardInterrupt:
-	print("종료 중...")
+	print('종료 중...')
 finally:
 	cap.release()
 	openvr.shutdown()

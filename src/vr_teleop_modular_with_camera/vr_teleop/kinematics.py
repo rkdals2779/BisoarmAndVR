@@ -16,30 +16,30 @@ from .config import IKConfig
 
 
 class RobotKinematics:
-	def __init__(self, ik_config: IKConfig, wrist_flex_key: str, wrist_roll_key: str, name: str = "arm"):
+	def __init__(self, ik_config: IKConfig, wrist_flex_key: str, wrist_roll_key: str, name: str = 'arm'):
 		self.config = ik_config
 		self.name = name
 		self.arm_joint_keys = list(ik_config.arm_joint_keys)
 
-		print(f"[{self.name}] IK 체인 로딩: {ik_config.urdf_path}")
+		print(f'[{self.name}] IK 체인 로딩: {ik_config.urdf_path}')
 		self.chain = Chain.from_urdf_file(ik_config.urdf_path)
 
 		# ikpy가 자동 생성하는 active_links_mask는 일부 URDF에서는 신뢰할 수
 		# 없습니다 (예: 'fixed' 타입 조인트인데도 mask가 True로 잡히는 경우).
 		# 대신 각 링크의 실제 joint_type을 직접 확인해서 'fixed'가 아닌 것만
 		# 진짜 활성 관절(회전 모터)로 판단합니다.
-		joint_types = [getattr(link, "joint_type", "fixed") for link in self.chain.links]
-		self.active_mask = np.array([jt not in ("fixed", None) for jt in joint_types])
+		joint_types = [getattr(link, 'joint_type', 'fixed') for link in self.chain.links]
+		self.active_mask = np.array([jt not in ('fixed', None) for jt in joint_types])
 		n_active = int(self.active_mask.sum())
 
-		print(f"[{self.name}][진단] IK 체인 링크:", [link.name for link in self.chain.links])
-		print(f"[{self.name}][진단] joint_type:", joint_types)
-		print(f"[{self.name}][진단] 실제 활성 관절 마스크:", self.active_mask, f"(활성 관절 수: {n_active})")
+		print(f'[{self.name}][진단] IK 체인 링크:', [link.name for link in self.chain.links])
+		print(f'[{self.name}][진단] joint_type:', joint_types)
+		print(f'[{self.name}][진단] 실제 활성 관절 마스크:', self.active_mask, f'(활성 관절 수: {n_active})')
 
 		assert n_active == len(self.arm_joint_keys), (
-			f"[{self.name}] 체인의 활성 관절 수({n_active})가 arm_joint_keys 길이"
-			f"({len(self.arm_joint_keys)})와 다릅니다.\n"
-			"위에 출력된 링크 목록을 보고 IKConfig.arm_joint_keys 순서/개수를 실제 URDF에 맞게 수정하세요."
+			f'[{self.name}] 체인의 활성 관절 수({n_active})가 arm_joint_keys 길이'
+			f'({len(self.arm_joint_keys)})와 다릅니다.\n'
+			'위에 출력된 링크 목록을 보고 IKConfig.arm_joint_keys 순서/개수를 실제 URDF에 맞게 수정하세요.'
 		)
 
 		self.active_indices = np.where(self.active_mask)[0]
@@ -61,12 +61,12 @@ class RobotKinematics:
 		n_position_active = int(position_only_mask.sum())
 
 		print(
-			f"[{self.name}][진단] 위치 전용 IK 활성 관절 수:", n_position_active,
-			"(wrist_flex/wrist_roll 제외, 3이어야 정상)",
+			f'[{self.name}][진단] 위치 전용 IK 활성 관절 수:', n_position_active,
+			'(wrist_flex/wrist_roll 제외, 3이어야 정상)',
 		)
 		assert n_position_active == 3, (
-			f"[{self.name}] 위치 전용 IK 활성 관절이 3개가 아닙니다. "
-			"arm_joint_keys 순서 또는 wrist_flex_key/wrist_roll_key 설정을 확인하세요."
+			f'[{self.name}] 위치 전용 IK 활성 관절이 3개가 아닙니다. '
+			'arm_joint_keys 순서 또는 wrist_flex_key/wrist_roll_key 설정을 확인하세요.'
 		)
 
 		# 이후 위치 IK 호출에서는 항상 이 마스크를 사용합니다.
@@ -77,7 +77,7 @@ class RobotKinematics:
 		# 벗어나면 최적화를 시작도 하지 않고 즉시 실패합니다. 그 실패한 seed가
 		# 다음 프레임에 그대로 재사용되면 영원히 같은 에러만 반복되므로, 매번
 		# seed를 물리적 한계 안으로 clip해서 이 악순환을 끊습니다.
-		link_bounds = [getattr(link, "bounds", (None, None)) for link in self.chain.links]
+		link_bounds = [getattr(link, 'bounds', (None, None)) for link in self.chain.links]
 		self.lower_bounds_full = np.array([
 			(b[0] if (b is not None and b[0] is not None) else -np.inf) for b in link_bounds
 		])
@@ -119,11 +119,11 @@ class RobotKinematics:
 		return np.degrees(np.asarray(full_angles_rad)[self.active_mask])
 
 	def print_joint_diagnostics(self, initial_arm_deg):
-		print(f"[{self.name}][진단] 관절 한계(deg) vs 현재 각도:")
+		print(f'[{self.name}][진단] 관절 한계(deg) vs 현재 각도:')
 		for key, idx, cur_deg in zip(self.arm_joint_keys, self.active_indices, initial_arm_deg):
 			lo = self.lower_bounds_full[idx]
 			hi = self.upper_bounds_full[idx]
 			lo_deg = np.degrees(lo) if np.isfinite(lo) else -np.inf
 			hi_deg = np.degrees(hi) if np.isfinite(hi) else np.inf
-			flag = " <-- 이미 한계 밖!" if not (lo_deg - 1e-6 <= cur_deg <= hi_deg + 1e-6) else ""
-			print(f"    [{self.name}] {key:20s}: [{lo_deg:8.1f}, {hi_deg:8.1f}]   현재: {cur_deg:8.1f}{flag}")
+			flag = ' <-- 이미 한계 밖!' if not (lo_deg - 1e-6 <= cur_deg <= hi_deg + 1e-6) else ''
+			print(f'    [{self.name}] {key:20s}: [{lo_deg:8.1f}, {hi_deg:8.1f}]   현재: {cur_deg:8.1f}{flag}')

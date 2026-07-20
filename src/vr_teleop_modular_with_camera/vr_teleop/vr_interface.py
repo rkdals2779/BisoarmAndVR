@@ -14,8 +14,8 @@ from .geometry import extract_position, extract_rotation_matrix, extract_pitch_r
 
 # 다른 모듈에서 vr_interface를 통해서도 바로 쓸 수 있도록 재노출
 __all__ = [
-	"VRSystem", "HMD_DEVICE_INDEX",
-	"extract_position", "extract_rotation_matrix", "extract_pitch_roll", "extract_yaw_pitch",
+	'VRSystem', 'HMD_DEVICE_INDEX',
+	'extract_position', 'extract_rotation_matrix', 'extract_pitch_roll', 'extract_yaw_pitch',
 ]
 
 _ROLE_MAP = {
@@ -37,8 +37,8 @@ class VRSystem:
 	def __init__(self):
 		self._vr = None
 
-	def connect(self) -> "VRSystem":
-		print("[VR] SteamVR 초기화 중...")
+	def connect(self) -> 'VRSystem':
+		print('[VR] SteamVR 초기화 중...')
 		self._vr = openvr.init(openvr.VRApplication_Background)
 		return self
 
