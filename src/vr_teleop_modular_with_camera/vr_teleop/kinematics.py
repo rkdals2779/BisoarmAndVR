@@ -16,6 +16,16 @@ from .config import IKConfig
 
 
 class RobotKinematics:
+	"""로봇 팔 한 대의 IK 체인·관절 한계 관리 클래스.
+
+	Attributes:
+		chain: ikpy 체인 (URDF에서 로딩).
+		arm_joint_keys: 활성 관절 키 목록 (로봇 명령 딕셔너리 키 순서).
+		active_mask: 체인 링크별 활성 관절 여부 마스크.
+		wrist_flex_bounds_deg: wrist_flex 관절 한계 (deg, (하한, 상한)).
+		wrist_roll_bounds_deg: wrist_roll 관절 한계 (deg, (하한, 상한)).
+	"""
+
 	def __init__(
 		self,
 		ik_config: IKConfig,
@@ -134,11 +144,20 @@ class RobotKinematics:
 		)
 
 	def clip_to_bounds(self, full_angles_rad: np.ndarray) -> np.ndarray:
+		"""전체 체인 관절각을 URDF 물리 한계 안으로 clip한다.
+
+		Args:
+			full_angles_rad: 체인 전체 길이의 관절각 벡터 (rad).
+
+		Returns:
+			한계 내로 clip된 관절각 벡터 (rad).
+		"""
 		return np.clip(
 			full_angles_rad, self.lower_bounds_full, self.upper_bounds_full
 		)
 
 	def zeros_full(self) -> np.ndarray:
+		"""체인 전체 길이의 0 관절각 벡터를 반환한다."""
 		return np.zeros(len(self.chain.links))
 
 	def build_seed(
@@ -147,8 +166,19 @@ class RobotKinematics:
 		wrist_flex_rad: float,
 		wrist_roll_rad: float,
 	) -> np.ndarray:
-		"""이전 IK 해를 물리적 한계 안으로 clip하고, 손목 두 관절은 이번
-        프레임의 직접 계산값으로 덮어써서 IK seed를 만듭니다."""
+		"""이전 IK 해 기반으로 이번 프레임의 IK seed를 만든다.
+
+		이전 해를 물리적 한계 안으로 clip하고, 손목 두 관절은 이번
+		프레임의 직접 계산값으로 덮어쓴다.
+
+		Args:
+			prev_full_rad: 이전 프레임 IK 해 (체인 전체, rad).
+			wrist_flex_rad: 이번 프레임 wrist_flex 직접 계산값 (rad).
+			wrist_roll_rad: 이번 프레임 wrist_roll 직접 계산값 (rad).
+
+		Returns:
+			IK 초기값으로 쓸 관절각 벡터 (체인 전체, rad).
+		"""
 		seed = self.clip_to_bounds(prev_full_rad).copy()
 		seed[self.wrist_flex_full_index] = wrist_flex_rad
 		seed[self.wrist_roll_full_index] = wrist_roll_rad
@@ -157,6 +187,15 @@ class RobotKinematics:
 	def solve_position_ik(
 		self, target_pos: np.ndarray, seed: np.ndarray,
 	) -> np.ndarray:
+		"""위치 전용(3DOF) IK를 풀어 관절각을 반환한다.
+
+		Args:
+			target_pos: 목표 TCP 위치 (m, 로봇 베이스 좌표계).
+			seed: IK 초기값 관절각 벡터 (체인 전체, rad).
+
+		Returns:
+			한계 내로 clip된 IK 해 (체인 전체, rad).
+		"""
 		angles_full = self.chain.inverse_kinematics(
 			target_position=target_pos,
 			initial_position=seed,
@@ -164,9 +203,22 @@ class RobotKinematics:
 		return self.clip_to_bounds(angles_full)
 
 	def full_to_arm_deg(self, full_angles_rad: np.ndarray) -> np.ndarray:
+		"""체인 전체 관절각(rad)에서 활성 관절만 뽑아 deg로 변환한다.
+
+		Args:
+			full_angles_rad: 체인 전체 길이의 관절각 벡터 (rad).
+
+		Returns:
+			활성 관절 순서의 관절각 벡터 (deg).
+		"""
 		return np.degrees(np.asarray(full_angles_rad)[self.active_mask])
 
 	def print_joint_diagnostics(self, initial_arm_deg: np.ndarray) -> None:
+		"""관절별 한계와 현재 각도를 비교해 콘솔에 출력한다.
+
+		Args:
+			initial_arm_deg: 활성 관절 순서의 현재 관절각 (deg).
+		"""
 		print(f'[{self.name}][진단] 관절 한계(deg) vs 현재 각도:')
 		joint_rows = zip(
 			self.arm_joint_keys, self.active_indices, initial_arm_deg

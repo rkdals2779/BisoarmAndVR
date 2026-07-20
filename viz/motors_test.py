@@ -8,7 +8,17 @@ def scan_feetech_motors(
 	baudrate: int = 1000000,
 	max_id: int = 15,
 ) -> None:
-	print(f'🔍 포트 {port}에서 1부터 {max_id}까지 모터 ID를 스캔합니다... (통신속도: {baudrate})')
+	"""PING 패킷으로 버스에 연결된 Feetech 모터 ID를 스캔한다.
+
+	Args:
+		port: 시리얼 포트 경로.
+		baudrate: 통신 속도 (Feetech 기본 1,000,000).
+		max_id: 스캔할 최대 모터 ID.
+	"""
+	print(
+		f'🔍 포트 {port}에서 1부터 {max_id}까지 모터 ID를 스캔합니다... '
+		f'(통신속도: {baudrate})'
+	)
 
 	try:
 		# 시리얼 포트 열기 (Feetech 모터 기본 통신속도는 보통 1,000,000)

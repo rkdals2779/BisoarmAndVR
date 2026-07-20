@@ -1,22 +1,16 @@
 #!/usr/bin/env python3
-"""
-check_hand_tracking.py
-=============================================================================
-matplotlib 없이 콘솔에서만, SteamVR로부터 손 스켈레톤(bone) 데이터가
-실제로 들어오고 있는지 진단하는 스크립트.
+"""SteamVR 손 스켈레톤(bone) 데이터 수신 여부를 진단하는 스크립트.
 
-확인하는 것
------------
-1. SteamVR에 연결된 트래킹 장치 목록 (Quest 손이 장치로 잡히는지)
-2. 스켈레톤 액션이 실제 장치에 "바인딩"되어 있는지 (getActionOrigins)
-3. 스켈레톤 액션이 "활성(active)" 상태인지 (bActive)
-4. 활성 상태라면 손목/검지 끝 좌표가 프레임마다 실제로 바뀌는지
+matplotlib 없이 콘솔에서만 확인한다.
 
-실행
-----
-    python3 check_hand_tracking.py
+확인하는 것:
+	1. SteamVR에 연결된 트래킹 장치 목록 (Quest 손이 장치로 잡히는지)
+	2. 스켈레톤 액션이 실제 장치에 '바인딩'되어 있는지 (getActionOrigins)
+	3. 스켈레톤 액션이 '활성(active)' 상태인지 (bActive)
+	4. 활성 상태라면 손목/검지 끝 좌표가 프레임마다 실제로 바뀌는지
 
-Ctrl+C로 종료.
+Example:
+	python3 hand_tracking_test.py  # Ctrl+C로 종료
 """
 
 import json
@@ -41,6 +35,14 @@ SAMPLE_BONES: Final[dict[str, int]] = {'Wrist': 1, 'IndexTip(Aux)': 27}
 
 
 def build_action_manifest(target_dir: Path) -> Path:
+	"""스켈레톤 액션 매니페스트 JSON을 만들어 경로를 반환한다.
+
+	Args:
+		target_dir: 매니페스트 파일을 만들 디렉터리.
+
+	Returns:
+		생성된 매니페스트 파일 경로.
+	"""
 	target_dir.mkdir(parents=True, exist_ok=True)
 	manifest = {
 		'action_sets': [{'name': ACTION_SET_PATH, 'usage': 'leftright'}],
@@ -75,6 +77,11 @@ def build_action_manifest(target_dir: Path) -> Path:
 
 
 def describe_tracked_devices(vr_system: 'openvr.IVRSystem') -> None:
+	"""현재 SteamVR에 연결된 트래킹 장치 목록을 출력한다.
+
+	Args:
+		vr_system: openvr IVRSystem 인스턴스.
+	"""
 	print('\n[1] 현재 SteamVR에 연결된 트래킹 장치')
 	print('-' * 60)
 	class_names = {
@@ -116,7 +123,14 @@ def describe_action_origins(
 	action_handle: int,
 	label: str,
 ) -> None:
-	"""이 액션이 실제로 어떤 입력 소스(장치)에 바인딩되어 있는지 확인."""
+	"""이 액션이 실제로 어떤 입력 소스(장치)에 바인딩되어 있는지 출력한다.
+
+	Args:
+		vr_input: openvr IVRInput 인스턴스.
+		action_set_handle: 액션 셋 핸들.
+		action_handle: 확인할 액션 핸들.
+		label: 출력에 표시할 라벨 (예: 'left').
+	"""
 	try:
 		origins = vr_input.getActionOrigins(
 			action_set_handle, action_handle, 16
@@ -145,6 +159,7 @@ def describe_action_origins(
 
 
 def main() -> None:
+	"""SteamVR 연결 후 장치/바인딩/스켈레톤 데이터를 순서대로 진단한다."""
 	try:
 		openvr.init(openvr.VRApplication_Background)
 	except Exception as error:

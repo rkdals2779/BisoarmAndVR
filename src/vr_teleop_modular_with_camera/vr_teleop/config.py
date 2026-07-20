@@ -35,10 +35,15 @@ class ControllerRole(Enum):
 # ============================================================
 @dataclass
 class OneEuroFilterConfig:
+	"""One Euro Filter 튜닝 파라미터.
+
+	Attributes:
+		min_cutoff: 손이 멈춰있을 때 기본 스무딩 강도
+			(낮을수록 부드러움).
+		beta: 손이 빠르게 움직일 때 필터를 얼마나 '풀어주는지'
+			(높을수록 반응 빠름/지연 적음).
+		d_cutoff: 미분 신호용 컷오프 주파수.
 	"""
-    min_cutoff: 손이 멈춰있을 때 기본 스무딩 강도 (낮을수록 부드러움)
-    beta:       손이 빠르게 움직일 때 필터를 얼마나 "풀어주는지" (높을수록 반응 빠름/지연 적음)
-    """
 	min_cutoff: float
 	beta: float
 	d_cutoff: float = 1.0
@@ -54,13 +59,12 @@ class TrajectoryConfig:
 
 @dataclass
 class WristMappingConfig:
-	"""
-    VR 컨트롤러 pitch/roll -> 손목 관절(wrist_flex/wrist_roll) 직접 매핑 설정.
-    IK를 거치지 않고 물리적으로 대응되는 관절에 1:1로 직접 매핑합니다
-    (이유는 control.py 상단 docstring 참고).
+	"""VR 컨트롤러 pitch/roll -> 손목 관절 직접 매핑 설정.
 
-    반대로 움직이면 해당 *_sign 값을 -1.0으로 뒤집으세요.
-    """
+	IK를 거치지 않고 물리적으로 대응되는 관절(wrist_flex/wrist_roll)에
+	1:1로 직접 매핑합니다 (이유는 control.py 상단 docstring 참고).
+	반대로 움직이면 해당 *_sign 값을 -1.0으로 뒤집으세요.
+	"""
 	wrist_flex_key: str = 'wrist_flex.pos'
 	wrist_roll_key: str = 'wrist_roll.pos'
 	pitch_scale: float = 1.0            # pitch -> wrist_flex 배율 (1:1)
@@ -84,16 +88,16 @@ class GripperConfig:
 
 @dataclass
 class CameraHeadConfig:
-	"""
-    HMD(헤드셋) 방향을 따라가는 카메라 pan/tilt 헤드 설정.
+	"""HMD(헤드셋) 방향을 따라가는 카메라 pan/tilt 헤드 설정.
 
-    중요: 이 카메라 모터(기본 id 7/8)는 로봇 팔과 "물리적으로 같은 시리얼
-    버스"(같은 USB-TTL 어댑터에 데이지체인으로 연결된 하나의 /dev/ttyACM*)에
-    달려 있다고 가정합니다. 그래서 camera_head.py는 별도의 serial.Serial을
-    새로 열지 않고, 이 설정이 달린 ArmConfig(RobotOutput)가 이미 열어놓은
-    시리얼 연결을 그대로 재사용합니다. 두 개의 독립된 Serial 연결이 같은
-    버스에 동시에 패킷을 쓰면 충돌해서 양쪽 다 통신 오류가 나기 때문입니다.
-    """
+	중요: 이 카메라 모터(기본 id 7/8)는 로봇 팔과 '물리적으로 같은
+	시리얼 버스'(같은 USB-TTL 어댑터에 데이지체인으로 연결된 하나의
+	/dev/ttyACM*)에 달려 있다고 가정합니다. 그래서 camera_head.py는
+	별도의 serial.Serial을 새로 열지 않고, 이 설정이 달린
+	ArmConfig(RobotOutput)가 이미 열어놓은 시리얼 연결을 그대로
+	재사용합니다. 두 개의 독립된 Serial 연결이 같은 버스에 동시에
+	패킷을 쓰면 충돌해서 양쪽 다 통신 오류가 나기 때문입니다.
+	"""
 	pan_motor_id: int = 7
 	tilt_motor_id: int = 8
 
@@ -125,13 +129,17 @@ class CameraHeadConfig:
 
 @dataclass
 class IKConfig:
+	"""IK 체인 설정.
+
+	Attributes:
+		urdf_path: 이 팔(로봇)이 사용할 URDF 파일 경로.
+		arm_joint_keys: IK 체인의 활성 관절 순서라고 '가정'한 목록.
+			표준 SO-101 URDF 기준 가정이며, 실행 시 kinematics.py의
+			진단 출력으로 반드시 검증하세요 (개수가 안 맞으면 assert로
+			즉시 실패합니다).
+		skip_threshold_m: 이 값보다 적게 움직이면 위치 IK 재계산을
+			생략합니다 (성능 최적화).
 	"""
-    urdf_path: 이 팔(로봇)이 사용할 URDF 파일 경로
-    arm_joint_keys: IK 체인에서 위치 IK에 사용되는 활성 관절 순서라고 "가정"한
-        목록입니다. 표준 SO-101 URDF 기준 가정이며, 실행 시 kinematics.py의
-        진단 출력으로 반드시 검증하세요 (개수가 안 맞으면 assert로 즉시 실패합니다).
-    skip_threshold_m: 이 값보다 적게 움직이면 위치 IK 재계산을 생략합니다 (성능 최적화).
-    """
 	urdf_path: str
 	skip_threshold_m: float = 0.001
 	arm_joint_keys: list[str] = field(default_factory=lambda: [
@@ -182,6 +190,7 @@ class TeleopConfig:
 
 	@property
 	def dt_nominal(self) -> float:
+		"""공칭 제어 주기 (초)."""
 		return 1.0 / self.control_hz
 
 
@@ -228,12 +237,18 @@ LEFT_ARM_CONFIG: Final[ArmConfig] = ArmConfig(
 
 
 def get_arm_configs(mode: str) -> list[ArmConfig]:
+	"""실행 모드 문자열에 해당하는 ArmConfig 목록을 반환한다.
+
+	Args:
+		mode: 'right'(오른팔 단일) / 'left'(왼팔 단일) /
+			'dual'(양팔 동시 제어) 중 하나. 대소문자 무관.
+
+	Returns:
+		해당 모드에서 구동할 ArmConfig 목록.
+
+	Raises:
+		ValueError: mode가 세 값 중 하나가 아닌 경우.
 	"""
-    mode:
-        "right" -> 오른쪽 컨트롤러 1개로 오른팔 로봇만 제어 (단일팔)
-        "left"  -> 왼쪽 컨트롤러 1개로 왼팔 로봇만 제어 (단일팔)
-        "dual"  -> 양쪽 컨트롤러로 로봇 2대를 동시에 제어 (양손 텔레옵)
-    """
 	mode = mode.lower()
 	if mode == 'right':
 		return [RIGHT_ARM_CONFIG]

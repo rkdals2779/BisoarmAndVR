@@ -41,7 +41,15 @@ from .trajectory import JointTrajectoryController
 
 @dataclass
 class ArmCommand:
-	"""이번 프레임에 실제로 로봇에 보낼 값 + 상태 표시용 정보"""
+	"""이번 프레임에 실제로 로봇에 보낼 값 + 상태 표시용 정보.
+
+	Attributes:
+		joint_deg: 관절 키 -> 목표각(deg) 딕셔너리 (그리퍼 제외).
+		gripper_deg: 그리퍼 목표각 (deg).
+		target_pos: 이번 프레임의 목표 TCP 위치 (m, 상태 표시용).
+		wrist_flex_deg: 손목 flex 목표각 (deg, 상태 표시용).
+		wrist_roll_deg: 손목 roll 목표각 (deg, 상태 표시용).
+	"""
 	joint_deg: dict[str, float]  # {joint_key: deg, ...} (그리퍼 제외)
 	gripper_deg: float
 	target_pos: np.ndarray
@@ -51,7 +59,17 @@ class ArmCommand:
 
 class ArmTeleopController:
 	"""VR 컨트롤러 한쪽 + 로봇 한 대에 대한 텔레옵 계산 상태 머신.
-    양팔 모드에서는 왼쪽/오른쪽 각각 독립된 인스턴스를 만들어 쓰면 됩니다."""
+
+	양팔 모드에서는 왼쪽/오른쪽 각각 독립된 인스턴스를 만들어 쓰면
+	됩니다.
+
+	Attributes:
+		config: 이 팔의 ArmConfig.
+		kinematics: 이 팔의 RobotKinematics 인스턴스.
+		pos_filter: 위치용 One Euro Filter.
+		rot_filter: 손목 회전용 One Euro Filter.
+		trajectory: 임계감쇠 관절 궤적 컨트롤러.
+	"""
 
 	def __init__(
 		self, arm_config: ArmConfig, kinematics: RobotKinematics,
@@ -89,9 +107,14 @@ class ArmTeleopController:
 		self, observation: dict[str, float],
 	) -> None:
 		"""로봇의 실제 현재 관절각으로 궤적/손목 영점을 초기화합니다.
-        (추측값이 아니라 관측값으로 시작해야 시작 순간 로봇이 튀지 않습니다.)
-        VR 캘리브레이션(calibrate)과는 별개로, 로봇에 연결한 직후 한 번만
-        호출하면 됩니다."""
+
+		추측값이 아니라 관측값으로 시작해야 시작 순간 로봇이 튀지
+		않습니다. VR 캘리브레이션(calibrate)과는 별개로, 로봇에 연결한
+		직후 한 번만 호출하면 됩니다.
+
+		Args:
+			observation: 로봇 관측 딕셔너리 (관절 키 -> 현재 각도 deg).
+		"""
 		initial_arm_deg = np.array([
 			observation[key] for key in self.config.ik.arm_joint_keys
 		])
@@ -119,9 +142,15 @@ class ArmTeleopController:
 		return self._vr_home_pos is not None
 
 	def calibrate(self, vr_pos: np.ndarray, vr_rot: np.ndarray) -> None:
-		"""이번 컨트롤러 pose를 '영점'으로 저장합니다. 최초로 유효한 pose를
-        받은 프레임에서 1회 호출하면 되고, 이 시점 이후의 컨트롤러 델타만큼만
-        로봇이 움직입니다."""
+		"""이번 컨트롤러 pose를 '영점'으로 저장합니다.
+
+		최초로 유효한 pose를 받은 프레임에서 1회 호출하면 되고, 이 시점
+		이후의 컨트롤러 델타만큼만 로봇이 움직입니다.
+
+		Args:
+			vr_pos: 컨트롤러 위치 (m, VR 좌표계).
+			vr_rot: 컨트롤러 회전 행렬 (3, 3).
+		"""
 		self._vr_home_pos = vr_pos.copy()
 		self._vr_home_rot = vr_rot.copy()
 
@@ -136,7 +165,18 @@ class ArmTeleopController:
 		t: float,
 		dt: float,
 	) -> ArmCommand:
-		"""calibrate()가 이미 호출된 상태에서 매 프레임 호출합니다."""
+		"""calibrate()가 이미 호출된 상태에서 매 프레임 호출합니다.
+
+		Args:
+			vr_pos: 컨트롤러 위치 (m, VR 좌표계).
+			vr_rot: 컨트롤러 회전 행렬 (3, 3).
+			trigger: 트리거 당김 정도 (0.0~1.0).
+			t: 이번 프레임 시각 (초).
+			dt: 이전 프레임 이후 경과 시간 (초).
+
+		Returns:
+			이번 프레임에 로봇으로 보낼 ArmCommand.
+		"""
 		config = self.config
 
 		# 1. VR delta 위치 -> 로봇 좌표계 목표 위치

@@ -21,6 +21,7 @@ from vr_teleop.config import TeleopConfig, get_arm_configs
 
 
 def parse_args() -> argparse.Namespace:
+	"""커맨드라인 인자를 파싱해 반환한다."""
 	parser = argparse.ArgumentParser(description='VR 텔레옵 컨트롤러')
 	parser.add_argument(
 		'--mode', choices=['left', 'right', 'dual'], default='dual',
@@ -41,6 +42,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+	"""설정을 구성하고 TeleopApp을 실행한다 (종료 안전망 포함)."""
 	args = parse_args()
 	arms = get_arm_configs(args.mode)
 	if args.is_camera_disabled:

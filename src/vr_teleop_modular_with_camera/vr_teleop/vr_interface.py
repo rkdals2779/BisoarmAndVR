@@ -40,23 +40,36 @@ HMD_DEVICE_INDEX: Final[int] = openvr.k_unTrackedDeviceIndex_Hmd
 
 class VRSystem:
 	"""SteamVR 세션 하나를 감싸는 얇은 래퍼.
-    양팔 모드에서는 이 인스턴스 하나를 왼쪽/오른쪽 두 ArmTeleopController가
-    함께 조회합니다 (컨트롤러마다 새로 연결할 필요 없음)."""
+
+	양팔 모드에서는 이 인스턴스 하나를 왼쪽/오른쪽 두
+	ArmTeleopController가 함께 조회합니다 (컨트롤러마다 새로 연결할 필요
+	없음).
+	"""
 
 	def __init__(self) -> None:
 		self._vr: openvr.IVRSystem | None = None
 
 	def connect(self) -> 'VRSystem':
+		"""SteamVR에 연결하고 자신을 반환한다 (체이닝용)."""
 		print('[VR] SteamVR 초기화 중...')
 		self._vr = openvr.init(openvr.VRApplication_Background)
 		return self
 
 	def shutdown(self) -> None:
+		"""SteamVR 세션을 종료한다 (중복 호출 안전)."""
 		if self._vr is not None:
 			openvr.shutdown()
 			self._vr = None
 
 	def get_controller_index(self, role: ControllerRole) -> int | None:
+		"""해당 역할(좌/우)의 컨트롤러 디바이스 인덱스를 찾는다.
+
+		Args:
+			role: 찾을 컨트롤러 역할 (LEFT/RIGHT).
+
+		Returns:
+			디바이스 인덱스. 해당 컨트롤러가 없으면 None.
+		"""
 		target_role = _ROLE_MAP[role]
 		for i in range(openvr.k_unMaxTrackedDeviceCount):
 			device_class = self._vr.getTrackedDeviceClass(i)
@@ -68,15 +81,30 @@ class VRSystem:
 		return None
 
 	def get_all_poses(self) -> Sequence[openvr.TrackedDevicePose_t]:
-		"""디바이스 전체의 pose를 한 번에 가져옵니다. 팔이 여러 개(양팔
-        모드)여도 매 프레임 이 함수는 한 번만 호출하고 결과를 공유하세요."""
+		"""디바이스 전체의 pose를 한 번에 가져옵니다.
+
+		팔이 여러 개(양팔 모드)여도 매 프레임 이 함수는 한 번만 호출하고
+		결과를 공유하세요.
+
+		Returns:
+			디바이스 인덱스로 접근 가능한 pose 배열.
+		"""
 		return self._vr.getDeviceToAbsoluteTrackingPose(
 			openvr.TrackingUniverseStanding, 0, openvr.k_unMaxTrackedDeviceCount
 		)
 
 	def get_trigger_value(self, controller_index: int) -> float:
-		"""0.0(뗌) ~ 1.0(완전히 당김). pyopenvr 버전에 따라 axis 인덱스가
-        다를 수 있으니 실제 컨트롤러로 값이 잘 들어오는지 먼저 확인하세요."""
+		"""컨트롤러 트리거 당김 정도를 반환한다.
+
+		pyopenvr 버전에 따라 axis 인덱스가 다를 수 있으니 실제
+		컨트롤러로 값이 잘 들어오는지 먼저 확인하세요.
+
+		Args:
+			controller_index: 컨트롤러 디바이스 인덱스.
+
+		Returns:
+			0.0(뗌) ~ 1.0(완전히 당김). 상태 조회 실패 시 0.0.
+		"""
 		is_valid, state = self._vr.getControllerState(controller_index)
 		if not is_valid:
 			return 0.0
@@ -86,8 +114,14 @@ class VRSystem:
 	def get_hmd_pose(
 		poses: Sequence[openvr.TrackedDevicePose_t],
 	) -> openvr.TrackedDevicePose_t:
-		"""get_all_poses()로 이미 받아온 poses 배열에서 HMD 항목만 꺼내는
-        편의 함수 (카메라 헤드 추종용). 별도의 openvr 호출은 필요 없습니다."""
+		"""poses 배열에서 HMD 항목만 꺼내는 편의 함수 (카메라 추종용).
+
+		Args:
+			poses: get_all_poses()로 이미 받아온 pose 배열.
+
+		Returns:
+			HMD의 pose. 별도의 openvr 호출은 발생하지 않습니다.
+		"""
 		return poses[HMD_DEVICE_INDEX]
 
 	# geometry 모듈의 순수 함수를 그대로 노출 (호출부 편의용)

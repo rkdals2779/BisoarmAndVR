@@ -17,13 +17,19 @@ from .control import ArmCommand
 
 
 class RobotOutput:
-	"""SO-101 팔로워 로봇 한 대에 대한 연결/관측/명령 전송을 감싸는 출력부."""
+	"""SO-101 팔로워 로봇 한 대에 대한 연결/관측/명령 전송을 감싸는 출력부.
+
+	Attributes:
+		config: 이 팔의 ArmConfig.
+		robot: lerobot SO101Follower 인스턴스 (connect() 전에는 None).
+	"""
 
 	def __init__(self, arm_config: ArmConfig) -> None:
 		self.config = arm_config
 		self.robot: SO101Follower | None = None
 
 	def connect(self) -> 'RobotOutput':
+		"""로봇에 연결하고(토크 ON) 자신을 반환한다 (체이닝용)."""
 		print(
 			f'[{self.config.name}] 로봇 초기화 중... '
 			f'(port={self.config.robot_port})'
@@ -44,23 +50,36 @@ class RobotOutput:
 		return self
 
 	def get_observation(self) -> dict[str, float]:
+		"""로봇 현재 관측값(관절 키 -> 각도 deg)을 반환한다."""
 		return self.robot.get_observation()
 
 	def send(self, command: ArmCommand) -> None:
+		"""팔 관절 + 그리퍼 목표각을 로봇으로 전송한다.
+
+		Args:
+			command: 이번 프레임의 ArmCommand.
+		"""
 		action = dict(command.joint_deg)
 		action[self.config.gripper.key] = command.gripper_deg
 		self.robot.send_action(action)
 
 	def get_camera_writer(self) -> SharedFeetechWriter | None:
-		"""
-        이 팔의 config에 camera(CameraHeadConfig)가 설정되어 있으면, 이
-        로봇이 이미 열어놓은 시리얼 연결을 그대로 공유하는 SharedFeetechWriter를
-        만들어 반환합니다. 새 포트를 여는 대신 기존 연결 객체를 찾아
-        재사용하므로, 로봇 팔과 카메라 모터가 물려 있는 같은 물리 버스에
-        패킷이 충돌 없이 순서대로만 나갑니다.
+		"""카메라 헤드용 공유 시리얼 writer를 만들어 반환합니다.
 
-        config.camera가 None이면 아무것도 하지 않고 None을 반환합니다.
-        """
+		이 팔의 config에 camera(CameraHeadConfig)가 설정되어 있으면, 이
+		로봇이 이미 열어놓은 시리얼 연결을 그대로 공유하는
+		SharedFeetechWriter를 만들어 반환합니다. 새 포트를 여는 대신
+		기존 연결 객체를 찾아 재사용하므로, 로봇 팔과 카메라 모터가
+		물려 있는 같은 물리 버스에 패킷이 충돌 없이 순서대로만 나갑니다.
+
+		Returns:
+			공유 시리얼 기반 SharedFeetechWriter.
+			config.camera가 None이면 None.
+
+		Raises:
+			RuntimeError: connect() 전에 호출했거나, robot 객체 안에서
+				공유할 시리얼 연결을 찾지 못한 경우.
+		"""
 		if self.config.camera is None:
 			return None
 		if self.robot is None:
@@ -79,19 +98,28 @@ class RobotOutput:
 		return SharedFeetechWriter(shared)
 
 	def disconnect(self) -> None:
+		"""로봇 연결을 해제한다 (lerobot 설정에 따라 토크 자동 해제)."""
 		if self.robot is not None:
 			self.robot.disconnect()
 
 
 class ConsoleStatusDisplay:
 	"""팔이 1개(단일팔)든 2개(양팔)든 매 프레임 한 줄로 갱신되는 상태 표시.
-    사용법: 루프마다 각 팔에 대해 set()을 호출한 뒤, 마지막에 flush() 1회."""
+
+	사용법: 루프마다 각 팔에 대해 set()을 호출한 뒤, 마지막에 flush()
+	1회.
+	"""
 
 	def __init__(self) -> None:
 		self._parts: dict[str, str] = {}
 
 	@staticmethod
 	def print_calibration_prompt(seconds: int = 3) -> None:
+		"""영점 조절 안내와 카운트다운을 출력한다.
+
+		Args:
+			seconds: 카운트다운 시간 (초).
+		"""
 		print('\n==================================================')
 		print(' 컨트롤러를 편한 위치와 방향으로 들고 대기하세요. (영점 조절)')
 		for remaining_seconds in range(seconds, 0, -1):
@@ -101,6 +129,12 @@ class ConsoleStatusDisplay:
 		print('==================================================\n')
 
 	def set(self, name: str, command: ArmCommand) -> None:
+		"""팔 하나의 이번 프레임 상태 문자열을 저장한다.
+
+		Args:
+			name: 팔 이름 (예: 'left_arm').
+			command: 이번 프레임의 ArmCommand.
+		"""
 		pos = command.target_pos
 		self._parts[name] = (
 			f'[{name}] XYZ:[{pos[0]:.3f},{pos[1]:.3f},{pos[2]:.3f}] '
@@ -110,11 +144,18 @@ class ConsoleStatusDisplay:
 		)
 
 	def set_camera(self, pan_deg: float, tilt_deg: float) -> None:
+		"""카메라 헤드의 이번 프레임 상태 문자열을 저장한다.
+
+		Args:
+			pan_deg: 전송된 pan 각도 (deg).
+			tilt_deg: 전송된 tilt 각도 (deg).
+		"""
 		self._parts['camera'] = (
 			f'[camera] Pan:{pan_deg:6.1f} Tilt:{tilt_deg:6.1f}'
 		)
 
 	def flush(self) -> None:
+		"""저장된 팔/카메라 상태를 한 줄로 합쳐 콘솔에 갱신 출력한다."""
 		if not self._parts:
 			return
 		line = '  |  '.join(self._parts[name] for name in self._parts)

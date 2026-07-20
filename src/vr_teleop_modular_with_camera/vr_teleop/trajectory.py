@@ -17,6 +17,15 @@ import numpy as np
 
 
 class JointTrajectoryController:
+	"""임계감쇠 스프링-댐퍼 기반 관절 궤적 컨트롤러.
+
+	Attributes:
+		kp: 스프링 계수 (반응성).
+		kd: 댐퍼 계수 (임계감쇠 조건으로 kp에서 자동 계산).
+		max_vel: 관절 속도 제한 (deg/s).
+		max_acc: 관절 가속도 제한 (deg/s^2).
+	"""
+
 	def __init__(
 		self, kp: float, max_vel_deg_s: float, max_acc_deg_s2: float,
 	) -> None:
@@ -28,10 +37,24 @@ class JointTrajectoryController:
 		self.vel: np.ndarray | None = None
 
 	def reset(self, pos_deg: np.ndarray) -> None:
+		"""내부 상태를 주어진 관절각으로 초기화한다 (속도 0).
+
+		Args:
+			pos_deg: 시작 관절각 벡터 (deg).
+		"""
 		self.pos = np.asarray(pos_deg, dtype=float).copy()
 		self.vel = np.zeros_like(self.pos)
 
 	def update(self, target_deg: np.ndarray, dt: float) -> np.ndarray:
+		"""목표각을 향해 한 스텝 진행한 명령 관절각을 반환한다.
+
+		Args:
+			target_deg: 이번 프레임의 목표 관절각 벡터 (deg).
+			dt: 이전 호출 이후 경과 시간 (초).
+
+		Returns:
+			속도/가속도 제한이 적용된 명령 관절각 벡터 (deg).
+		"""
 		target_deg = np.asarray(target_deg, dtype=float)
 		if self.pos is None:
 			self.reset(target_deg)

@@ -36,6 +36,16 @@ class _ArmRuntime:
 
 
 class TeleopApp:
+	"""VR 텔레옵 전체 실행을 오케스트레이션하는 애플리케이션.
+
+	Attributes:
+		config: 실행 설정 (TeleopConfig).
+		vr_system: SteamVR 래퍼 (팔들이 공유).
+		arms: 팔별 런타임 객체 목록.
+		display: 콘솔 상태 표시기.
+		camera_head: 카메라 헤드 컨트롤러 (설정 없으면 None).
+	"""
+
 	def __init__(self, teleop_config: TeleopConfig) -> None:
 		if not teleop_config.arms:
 			raise ValueError(
@@ -59,6 +69,12 @@ class TeleopApp:
 
 	# ------------------------------------------------------------
 	def setup(self) -> 'TeleopApp':
+		"""VR 연결과 팔별 로봇/IK/카메라를 초기화한다 (체이닝용).
+
+		Raises:
+			BaseException: 초기화 도중 발생한 예외를 (연결된 만큼 토크
+				해제 후) 그대로 다시 던진다.
+		"""
 		# 이 메서드 전체를 try/except로 감싸는 이유: 로봇 연결(토크 ON)은
 		# 팔마다 순서대로 일어나는데, 예를 들어 왼팔이 먼저 연결된 뒤
 		# 오른팔 연결이나 카메라 시리얼 공유 탐색, IK 초기화 등 "그 다음
@@ -116,6 +132,7 @@ class TeleopApp:
 
 	# ------------------------------------------------------------
 	def run(self) -> None:
+		"""실시간 제어 루프를 실행한다 (Ctrl+C로 종료, 종료 시 정리 보장)."""
 		dt_nominal = self.config.dt_nominal
 		last_loop_t = time.perf_counter()
 		try:
@@ -194,6 +211,7 @@ class TeleopApp:
 
 	# ------------------------------------------------------------
 	def shutdown(self) -> None:
+		"""카메라/로봇 토크 해제와 VR 종료를 수행한다 (1회만 실행)."""
 		# run()의 finally, setup() 실패 시 정리, main()의 최종 안전망(atexit
 		# 등) 등 여러 경로가 이 메서드를 부를 수 있습니다. 두 번째 이후
 		# 호출은 아무 것도 하지 않고 바로 리턴해서 "이미 닫힌 연결을 또

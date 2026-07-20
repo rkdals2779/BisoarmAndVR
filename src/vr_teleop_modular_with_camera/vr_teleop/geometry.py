@@ -14,14 +14,28 @@ from scipy.spatial.transform import Rotation as ScipyRotation
 
 
 def extract_position(pose_matrix: Sequence[Sequence[float]]) -> np.ndarray:
-	"""pyopenvr의 HmdMatrix34_t(3x4)에서 위치(XYZ) 성분만 뽑아냅니다."""
+	"""pyopenvr의 HmdMatrix34_t(3x4)에서 위치(XYZ) 성분만 뽑아냅니다.
+
+	Args:
+		pose_matrix: OpenVR 3x4 변환 행렬 (행별 인덱싱 가능 객체).
+
+	Returns:
+		위치 벡터 (3,) - [x, y, z].
+	"""
 	return np.array([pose_matrix[0][3], pose_matrix[1][3], pose_matrix[2][3]])
 
 
 def extract_rotation_matrix(
 	pose_matrix: Sequence[Sequence[float]],
 ) -> np.ndarray:
-	"""pyopenvr의 HmdMatrix34_t(3x4)에서 회전 성분(3x3)만 뽑아냅니다."""
+	"""pyopenvr의 HmdMatrix34_t(3x4)에서 회전 성분(3x3)만 뽑아냅니다.
+
+	Args:
+		pose_matrix: OpenVR 3x4 변환 행렬 (행별 인덱싱 가능 객체).
+
+	Returns:
+		회전 행렬 (3, 3).
+	"""
 	return np.array([
 		[pose_matrix[0][0], pose_matrix[0][1], pose_matrix[0][2]],
 		[pose_matrix[1][0], pose_matrix[1][1], pose_matrix[1][2]],
@@ -30,18 +44,24 @@ def extract_rotation_matrix(
 
 
 def extract_pitch_roll(rel_rot_matrix: np.ndarray) -> tuple[float, float]:
+	"""캘리브레이션 시점 대비 상대 회전행렬에서 pitch/roll만 추출합니다.
+
+	OpenVR 컨트롤러 로컬 축 관례: X=오른쪽, Y=위, Z=컨트롤러 뒤쪽
+	(즉 -Z가 실제로 컨트롤러가 가리키는 포인팅 방향).
+
+	3축 중 2개(pitch, roll)만 쓰고 yaw는 버리는데, 순서를 'XYZ'로 잡아서
+	'버리는 축(yaw=Y)'이 가운데 각도가 되게 했습니다. Tait-Bryan 분해는
+	구조적으로 가운데 각도만 ±90도로 범위가 눌리고(짐벌락과 같은 이유),
+	첫 번째/세 번째 각도는 ±180도 풀레인지가 나옵니다. yaw를 가운데로
+	보내면 pitch(X, 첫 번째)와 roll(Z, 세 번째) 둘 다 풀레인지를 그대로
+	씁니다.
+
+	Args:
+		rel_rot_matrix: 영점 대비 상대 회전 행렬 (3, 3).
+
+	Returns:
+		(pitch, roll) 라디안 튜플.
 	"""
-    캘리브레이션 시점 대비 상대 회전행렬에서 pitch/roll만 추출합니다.
-
-    OpenVR 컨트롤러 로컬 축 관례: X=오른쪽, Y=위, Z=컨트롤러 뒤쪽
-    (즉 -Z가 실제로 컨트롤러가 가리키는 포인팅 방향).
-
-    3축 중 2개(pitch, roll)만 쓰고 yaw는 버리는데, 순서를 'XYZ'로 잡아서
-    "버리는 축(yaw=Y)"이 가운데 각도가 되게 했습니다. Tait-Bryan 분해는
-    구조적으로 가운데 각도만 ±90도로 범위가 눌리고(짐벌락과 같은 이유),
-    첫 번째/세 번째 각도는 ±180도 풀레인지가 나옵니다. yaw를 가운데로
-    보내면 pitch(X, 첫 번째)와 roll(Z, 세 번째) 둘 다 풀레인지를 그대로 씁니다.
-    """
 	pitch, _yaw, roll = ScipyRotation.from_matrix(
 		rel_rot_matrix
 	).as_euler('XYZ', degrees=False)
@@ -49,15 +69,19 @@ def extract_pitch_roll(rel_rot_matrix: np.ndarray) -> tuple[float, float]:
 
 
 def extract_yaw_pitch(rel_rot_matrix: np.ndarray) -> tuple[float, float]:
-	"""
-    캘리브레이션 시점 대비 HMD 상대 회전행렬에서 yaw/pitch만 추출합니다
-    (카메라 pan/tilt 헤드 추종용).
+	"""HMD 상대 회전행렬에서 yaw/pitch만 추출합니다 (pan/tilt 추종용).
 
-    extract_pitch_roll과 반대로 여기서는 yaw(고개 좌우 젓기)가 필요하고
-    roll(고개 옆으로 기울이기)은 버립니다. 그래서 순서를 'YXZ'로 잡아서
-    "버리는 축(roll=Z)"이 가운데로 가게 하고, yaw(Y, 첫 번째)와
-    pitch(X, 두 번째) 둘 다 풀레인지를 그대로 씁니다.
-    """
+	extract_pitch_roll과 반대로 여기서는 yaw(고개 좌우 젓기)가 필요하고
+	roll(고개 옆으로 기울이기)은 버립니다. 그래서 순서를 'YXZ'로 잡아서
+	'버리는 축(roll=Z)'이 가운데로 가게 하고, yaw(Y, 첫 번째)와
+	pitch(X, 두 번째) 둘 다 풀레인지를 그대로 씁니다.
+
+	Args:
+		rel_rot_matrix: 영점 대비 상대 회전 행렬 (3, 3).
+
+	Returns:
+		(yaw, pitch) 라디안 튜플.
+	"""
 	yaw, pitch, _roll = ScipyRotation.from_matrix(
 		rel_rot_matrix
 	).as_euler('YXZ', degrees=False)
