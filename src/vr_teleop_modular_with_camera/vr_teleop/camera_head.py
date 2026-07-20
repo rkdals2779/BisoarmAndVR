@@ -88,36 +88,36 @@ class SharedFeetechWriter:
     """
 
 	def __init__(self, shared_serial: serial.Serial) -> None:
-		self.ser = shared_serial
+		self.serial_conn = shared_serial
 
 	def write_position(self, motor_id: int, pos_deg: float) -> None:
 		# 0~360도를 0~4095로 변환
-		pos_counts = int(pos_deg * 4096 / 360.0)
-		pos_counts = max(0, min(4095, pos_counts))
-		pos_l = pos_counts & 0xFF
-		pos_h = (pos_counts >> 8) & 0xFF
+		position_counts = int(pos_deg * 4096 / 360.0)
+		position_counts = max(0, min(4095, position_counts))
+		position_low = position_counts & 0xFF
+		position_high = (position_counts >> 8) & 0xFF
 
 		length = 9
-		cmd = 0x03
-		addr = 0x2A  # Target Position Register
-		checksum = ~(motor_id + length + cmd + addr + pos_l + pos_h + 0 + 0 + 0 + 0) & 0xFF
+		instruction = 0x03
+		address = 0x2A  # Target Position Register
+		checksum = ~(motor_id + length + instruction + address + position_low + position_high + 0 + 0 + 0 + 0) & 0xFF
 
 		packet = bytearray([
-			0xFF, 0xFF, motor_id, length, cmd, addr,
-			pos_l, pos_h, 0x00, 0x00, 0x00, 0x00, checksum
+			0xFF, 0xFF, motor_id, length, instruction, address,
+			position_low, position_high, 0x00, 0x00, 0x00, 0x00, checksum
 		])
-		self.ser.write(packet)
+		self.serial_conn.write(packet)
 
 	def release_torque(self, motor_id: int) -> None:
 		"""토크를 해제해서 손으로 굴릴 수 있는 Free 상태로 만듭니다."""
 		length = 4
-		cmd = 0x03
-		addr = 0x28  # Torque Enable Register
-		val = 0x00
-		checksum = ~(motor_id + length + cmd + addr + val) & 0xFF
+		instruction = 0x03
+		address = 0x28  # Torque Enable Register
+		value = 0x00
+		checksum = ~(motor_id + length + instruction + address + value) & 0xFF
 
-		packet = bytearray([0xFF, 0xFF, motor_id, length, cmd, addr, val, checksum])
-		self.ser.write(packet)
+		packet = bytearray([0xFF, 0xFF, motor_id, length, instruction, address, value, checksum])
+		self.serial_conn.write(packet)
 
 	def flush_input(self) -> None:
 		"""공유 시리얼 포트의 입력 버퍼를 비웁니다.
@@ -134,10 +134,10 @@ class SharedFeetechWriter:
         시작하도록 합니다.
         """
 		try:
-			self.ser.reset_input_buffer()
+			self.serial_conn.reset_input_buffer()
 		except AttributeError:
 			# 구버전 pyserial 호환
-			self.ser.flushInput()
+			self.serial_conn.flushInput()
 
 
 # ============================================================
@@ -180,20 +180,20 @@ class CameraHeadController:
 	def compute_and_send(self, hmd_rot: np.ndarray, t: float, dt: float) -> tuple[float, float]:
 		"""calibrate()가 이미 호출된 상태에서 매 프레임 호출합니다.
         반환값은 (pan_deg, tilt_deg) - 콘솔 상태 표시용."""
-		cfg = self.config
+		config = self.config
 
 		rel_rot = self._home_rot.T @ hmd_rot
 		yaw_raw, pitch_raw = extract_yaw_pitch(rel_rot)
 		yaw_filt, pitch_filt = self.rot_filter.filter(np.array([yaw_raw, pitch_raw]), t)
 
-		pan_target = cfg.pan_home_deg + cfg.yaw_sign * np.degrees(yaw_filt) * cfg.yaw_scale
-		tilt_target = cfg.tilt_home_deg + cfg.pitch_sign * np.degrees(pitch_filt) * cfg.pitch_scale
-		pan_target = float(np.clip(pan_target, cfg.pan_min_deg, cfg.pan_max_deg))
-		tilt_target = float(np.clip(tilt_target, cfg.tilt_min_deg, cfg.tilt_max_deg))
+		pan_target = config.pan_home_deg + config.yaw_sign * np.degrees(yaw_filt) * config.yaw_scale
+		tilt_target = config.tilt_home_deg + config.pitch_sign * np.degrees(pitch_filt) * config.pitch_scale
+		pan_target = float(np.clip(pan_target, config.pan_min_deg, config.pan_max_deg))
+		tilt_target = float(np.clip(tilt_target, config.tilt_min_deg, config.tilt_max_deg))
 
 		smoothed = self.trajectory.update([pan_target, tilt_target], dt)
-		self.writer.write_position(cfg.pan_motor_id, float(smoothed[0]))
-		self.writer.write_position(cfg.tilt_motor_id, float(smoothed[1]))
+		self.writer.write_position(config.pan_motor_id, float(smoothed[0]))
+		self.writer.write_position(config.tilt_motor_id, float(smoothed[1]))
 		return float(smoothed[0]), float(smoothed[1])
 
 	def release_torque(self) -> None:

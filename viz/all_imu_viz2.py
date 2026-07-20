@@ -6,11 +6,11 @@ import matplotlib.pyplot as plt
 from collections import deque
 
 
-def extract_euler_from_matrix(mat: 'openvr.HmdMatrix34_t') -> tuple[float, float, float]:
+def extract_euler_from_matrix(pose_matrix: 'openvr.HmdMatrix34_t') -> tuple[float, float, float]:
 	"""OpenVR 3x4 변환 행렬에서 오차에 안전한 atan2 방식으로 Roll, Pitch, Yaw(도) 추출"""
-	pitch = math.degrees(math.atan2(-mat[1][2], math.sqrt(mat[0][2] ** 2 + mat[2][2] ** 2)))
-	yaw = math.degrees(math.atan2(mat[0][2], mat[2][2]))
-	roll = math.degrees(math.atan2(mat[1][0], mat[1][1]))
+	pitch = math.degrees(math.atan2(-pose_matrix[1][2], math.sqrt(pose_matrix[0][2] ** 2 + pose_matrix[2][2] ** 2)))
+	yaw = math.degrees(math.atan2(pose_matrix[0][2], pose_matrix[2][2]))
+	roll = math.degrees(math.atan2(pose_matrix[1][0], pose_matrix[1][1]))
 	return roll, pitch, yaw
 
 
@@ -29,19 +29,19 @@ def find_vr_device_indices(vr_system: 'openvr.IVRSystem') -> dict[str, int | Non
 	return devices
 
 
-def update_quiver_axes(ax: 'plt.Axes', mat: 'openvr.HmdMatrix34_t', x: float, y: float, z: float, quivers_list: list, scale: float = 0.25) -> None:
+def update_quiver_axes(ax: 'plt.Axes', pose_matrix: 'openvr.HmdMatrix34_t', x: float, y: float, z: float, quivers_list: list, scale: float = 0.25) -> None:
 	"""해당 장치의 변환 행렬을 기반으로 3D 공간에 R(X), G(Y), B(Z) 화살표 축을 플로팅"""
-	q_x = ax.quiver(x, z, y, mat[0][0], mat[2][0], mat[1][0], color='red', length=scale, normalize=True, lw=1.5)
-	q_y = ax.quiver(x, z, y, mat[0][1], mat[2][1], mat[1][1], color='green', length=scale, normalize=True, lw=1.5)
-	q_z = ax.quiver(x, z, y, mat[0][2], mat[2][2], mat[1][2], color='blue', length=scale, normalize=True, lw=1.5)
-	quivers_list.extend([q_x, q_y, q_z])
+	quiver_x = ax.quiver(x, z, y, pose_matrix[0][0], pose_matrix[2][0], pose_matrix[1][0], color='red', length=scale, normalize=True, lw=1.5)
+	quiver_y = ax.quiver(x, z, y, pose_matrix[0][1], pose_matrix[2][1], pose_matrix[1][1], color='green', length=scale, normalize=True, lw=1.5)
+	quiver_z = ax.quiver(x, z, y, pose_matrix[0][2], pose_matrix[2][2], pose_matrix[1][2], color='blue', length=scale, normalize=True, lw=1.5)
+	quivers_list.extend([quiver_x, quiver_y, quiver_z])
 
 
 # 1. SteamVR 백엔드 초기화
 try:
 	vr_system = openvr.init(openvr.VRApplication_Background)
-except openvr.OpenVRError as e:
-	print(f'SteamVR을 시작할 수 없습니다: {e}')
+except openvr.OpenVRError as error:
+	print(f'SteamVR을 시작할 수 없습니다: {error}')
 	exit()
 
 # 2. 실시간 대시보드 그래픽스 설정
@@ -100,55 +100,55 @@ try:
 			openvr.TrackingUniverseStanding, 0, openvr.k_unMaxTrackedDeviceCount
 		)
 
-		for q in active_quivers:
-			q.remove()
+		for quiver in active_quivers:
+			quiver.remove()
 		active_quivers.clear()
 
 		# --- 1. HMD 처리 ---
-		hmd_idx = device_map['hmd']
-		hmd_pose = poses[hmd_idx]
+		hmd_index = device_map['hmd']
+		hmd_pose = poses[hmd_index]
 		hmd_x, hmd_y, hmd_z = 0.0, 0.0, 0.0
 		hmd_roll, hmd_pitch, hmd_yaw = 0.0, 0.0, 0.0
 		hmd_status = 'OFF'
 
 		if hmd_pose.bPoseIsValid:
-			mat = hmd_pose.mDeviceToAbsoluteTracking
-			hmd_x, hmd_y, hmd_z = mat[0][3], mat[1][3], mat[2][3]
-			hmd_roll, hmd_pitch, hmd_yaw = extract_euler_from_matrix(mat)
+			pose_matrix = hmd_pose.mDeviceToAbsoluteTracking
+			hmd_x, hmd_y, hmd_z = pose_matrix[0][3], pose_matrix[1][3], pose_matrix[2][3]
+			hmd_roll, hmd_pitch, hmd_yaw = extract_euler_from_matrix(pose_matrix)
 			scatter_hmd._offsets3d = ([hmd_x], [hmd_z], [hmd_y])
-			update_quiver_axes(ax3d, mat, hmd_x, hmd_y, hmd_z, active_quivers, scale=0.3)
+			update_quiver_axes(ax3d, pose_matrix, hmd_x, hmd_y, hmd_z, active_quivers, scale=0.3)
 			hmd_status = 'ON '
 		history_hmd_yaw.append(hmd_yaw)
 
 		# --- 2. 왼쪽 컨트롤러 처리 ---
-		left_idx = device_map['left_ctrl']
+		left_index = device_map['left_ctrl']
 		left_x, left_y, left_z = 0.0, 0.0, 0.0
 		left_roll, left_pitch, left_yaw = 0.0, 0.0, 0.0
 		left_status = 'OFF'
 
-		if left_idx is not None and poses[left_idx].bPoseIsValid:
-			mat = poses[left_idx].mDeviceToAbsoluteTracking
-			left_x, left_y, left_z = mat[0][3], mat[1][3], mat[2][3]
-			left_roll, left_pitch, left_yaw = extract_euler_from_matrix(mat)
+		if left_index is not None and poses[left_index].bPoseIsValid:
+			pose_matrix = poses[left_index].mDeviceToAbsoluteTracking
+			left_x, left_y, left_z = pose_matrix[0][3], pose_matrix[1][3], pose_matrix[2][3]
+			left_roll, left_pitch, left_yaw = extract_euler_from_matrix(pose_matrix)
 			scatter_left._offsets3d = ([left_x], [left_z], [left_y])
-			update_quiver_axes(ax3d, mat, left_x, left_y, left_z, active_quivers, scale=0.2)
+			update_quiver_axes(ax3d, pose_matrix, left_x, left_y, left_z, active_quivers, scale=0.2)
 			left_status = 'ON '
 		else:
 			scatter_left._offsets3d = ([], [], [])
 		history_left_yaw.append(left_yaw)
 
 		# --- 3. 오른쪽 컨트롤러 처리 ---
-		right_idx = device_map['right_ctrl']
+		right_index = device_map['right_ctrl']
 		right_x, right_y, right_z = 0.0, 0.0, 0.0
 		right_roll, right_pitch, right_yaw = 0.0, 0.0, 0.0
 		right_status = 'OFF'
 
-		if right_idx is not None and poses[right_idx].bPoseIsValid:
-			mat = poses[right_idx].mDeviceToAbsoluteTracking
-			right_x, right_y, right_z = mat[0][3], mat[1][3], mat[2][3]
-			right_roll, right_pitch, right_yaw = extract_euler_from_matrix(mat)
+		if right_index is not None and poses[right_index].bPoseIsValid:
+			pose_matrix = poses[right_index].mDeviceToAbsoluteTracking
+			right_x, right_y, right_z = pose_matrix[0][3], pose_matrix[1][3], pose_matrix[2][3]
+			right_roll, right_pitch, right_yaw = extract_euler_from_matrix(pose_matrix)
 			scatter_right._offsets3d = ([right_x], [right_z], [right_y])
-			update_quiver_axes(ax3d, mat, right_x, right_y, right_z, active_quivers, scale=0.2)
+			update_quiver_axes(ax3d, pose_matrix, right_x, right_y, right_z, active_quivers, scale=0.2)
 			right_status = 'ON '
 		else:
 			scatter_right._offsets3d = ([], [], [])

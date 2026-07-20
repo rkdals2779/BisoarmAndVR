@@ -7,9 +7,9 @@ def scan_feetech_motors(port: str = '/dev/ttyACM0', baudrate: int = 1000000, max
 
 	try:
 		# 시리얼 포트 열기 (Feetech 모터 기본 통신속도는 보통 1,000,000)
-		ser = serial.Serial(port, baudrate, timeout=0.05)
-	except Exception as e:
-		print(f'❌ 포트 열기 실패: {e}')
+		serial_conn = serial.Serial(port, baudrate, timeout=0.05)
+	except Exception as error:
+		print(f'❌ 포트 열기 실패: {error}')
 		print('포트 권한이 없다면 \'sudo chmod 666 /dev/ttyACM1\' 명령어를 먼저 실행해주세요.')
 		return
 
@@ -24,22 +24,22 @@ def scan_feetech_motors(port: str = '/dev/ttyACM0', baudrate: int = 1000000, max
 
 		packet = bytearray([0xFF, 0xFF, motor_id, length, instruction, checksum])
 
-		ser.reset_input_buffer()
-		ser.write(packet)
+		serial_conn.reset_input_buffer()
+		serial_conn.write(packet)
 
 		# 응답 대기 (핑 응답은 6바이트)
-		response = ser.read(6)
+		response = serial_conn.read(6)
 
 		# 응답 패킷 헤더(FF FF) 및 ID 일치 확인
 		if len(response) >= 6 and response[0] == 0xFF and response[1] == 0xFF:
-			recv_id = response[2]
+			received_id = response[2]
 			error_code = response[4]
 
-			if recv_id == motor_id:
+			if received_id == motor_id:
 				print(f'✅ 모터 발견! ID: {motor_id:2d} (상태/에러 코드: {error_code})')
 				found_ids.append(motor_id)
 
-	ser.close()
+	serial_conn.close()
 
 	print('\n--- 📊 스캔 결과 ---')
 	if found_ids:

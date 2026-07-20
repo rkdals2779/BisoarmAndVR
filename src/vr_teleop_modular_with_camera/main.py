@@ -31,7 +31,7 @@ def parse_args() -> argparse.Namespace:
 		help='제어 루프 주파수 Hz (기본: 50)',
 	)
 	parser.add_argument(
-		'--no-camera', action='store_true',
+		'--no-camera', action='store_true', dest='is_camera_disabled',
 		help='왼팔에 카메라 pan/tilt 모터(id 7/8)가 물려 있지 않을 때 카메라 추종을 끕니다.',
 	)
 	return parser.parse_args()
@@ -40,10 +40,10 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
 	args = parse_args()
 	arms = get_arm_configs(args.mode)
-	if args.no_camera:
+	if args.is_camera_disabled:
 		# camera가 붙어 있는 ArmConfig만 골라서 camera=None으로 교체 (원본
 		# 프리셋 자체는 건드리지 않도록 dataclasses.replace로 새 복사본 생성).
-		arms = [dataclasses.replace(a, camera=None) if a.camera is not None else a for a in arms]
+		arms = [dataclasses.replace(arm, camera=None) if arm.camera is not None else arm for arm in arms]
 
 	teleop_config = TeleopConfig(control_hz=args.hz, arms=arms)
 
@@ -52,7 +52,7 @@ def main() -> None:
 	# 안전망 1: atexit. 여기서 등록해두면 정상 종료/Ctrl+C/아래에서 처리하는
 	# 예외 등 어떤 경로로 파이썬 인터프리터가 종료되더라도 마지막으로 한 번 더
 	# shutdown()이 실행됩니다. shutdown()은 이미 실행됐으면 아무 것도 안 하고
-	# 바로 리턴하도록 만들어져 있으므로(app.py의 _shutdown_done), 여기서
+	# 바로 리턴하도록 만들어져 있으므로(app.py의 _is_shutdown_done), 여기서
 	# 중복 호출돼도 안전합니다.
 	atexit.register(app.shutdown)
 

@@ -65,11 +65,11 @@ class VRSystem:
 			openvr.TrackingUniverseStanding, 0, openvr.k_unMaxTrackedDeviceCount
 		)
 
-	def get_trigger_value(self, controller_idx: int) -> float:
+	def get_trigger_value(self, controller_index: int) -> float:
 		"""0.0(뗌) ~ 1.0(완전히 당김). pyopenvr 버전에 따라 axis 인덱스가
         다를 수 있으니 실제 컨트롤러로 값이 잘 들어오는지 먼저 확인하세요."""
-		result, state = self._vr.getControllerState(controller_idx)
-		if not result:
+		is_valid, state = self._vr.getControllerState(controller_index)
+		if not is_valid:
 			return 0.0
 		return float(state.rAxis[1].x)
 

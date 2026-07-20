@@ -91,8 +91,8 @@ class ConsoleStatusDisplay:
 	def print_calibration_prompt(seconds: int = 3) -> None:
 		print('\n==================================================')
 		print(' 컨트롤러를 편한 위치와 방향으로 들고 대기하세요. (영점 조절)')
-		for i in range(seconds, 0, -1):
-			print(f' {i}초 전...')
+		for remaining_seconds in range(seconds, 0, -1):
+			print(f' {remaining_seconds}초 전...')
 			time.sleep(1)
 		print('\n[동기화 완료] 추종을 시작합니다! (종료: Ctrl+C)')
 		print('==================================================\n')

@@ -25,14 +25,14 @@ from .vr_interface import VRSystem, HMD_DEVICE_INDEX
 class _ArmRuntime:
 	"""팔 하나에 필요한 런타임 객체 묶음 (내부용)"""
 	config: ArmConfig
-	kin: RobotKinematics
+	kinematics: RobotKinematics
 	output: RobotOutput
 	# setup() 도중에는 output.connect()가 끝난 직후(=토크가 이미 켜진 직후)
 	# 바로 self.arms에 등록해서, 그 뒤 단계(controller 초기화, 카메라
 	# writer 탐색 등)에서 예외가 나도 shutdown()이 이 팔을 찾아 토크를
 	# 해제할 수 있게 합니다. 그래서 controller는 처음엔 None일 수 있습니다.
 	controller: ArmTeleopController | None = None
-	device_idx: int | None = None
+	device_index: int | None = None
 
 
 class TeleopApp:
@@ -52,7 +52,7 @@ class TeleopApp:
 		# shutdown()이 여러 경로(run()의 finally, setup() 실패 시 정리,
 		# main()의 최종 안전망 등)에서 중복 호출될 수 있으므로, 실제
 		# 정리 작업은 딱 한 번만 실행되도록 막는 플래그입니다.
-		self._shutdown_done = False
+		self._is_shutdown_done = False
 
 	# ------------------------------------------------------------
 	def setup(self) -> 'TeleopApp':
@@ -67,30 +67,30 @@ class TeleopApp:
 		try:
 			self.vr_system.connect()
 
-			for arm_cfg in self.config.arms:
-				print(f'\n---- [{arm_cfg.name}] ({arm_cfg.controller_role.value} 컨트롤러) 초기화 ----')
-				kin = RobotKinematics(
-					arm_cfg.ik,
-					arm_cfg.wrist.wrist_flex_key,
-					arm_cfg.wrist.wrist_roll_key,
-					name=arm_cfg.name,
+			for arm_config in self.config.arms:
+				print(f'\n---- [{arm_config.name}] ({arm_config.controller_role.value} 컨트롤러) 초기화 ----')
+				kinematics = RobotKinematics(
+					arm_config.ik,
+					arm_config.wrist.wrist_flex_key,
+					arm_config.wrist.wrist_roll_key,
+					name=arm_config.name,
 				)
-				output = RobotOutput(arm_cfg).connect()
+				output = RobotOutput(arm_config).connect()
 
 				# 연결 성공 = 토크 ON 시점. 이후 단계가 실패하더라도
 				# shutdown()이 이 팔을 반드시 찾을 수 있도록 controller가
 				# 준비되기 "전에" 먼저 등록합니다.
-				runtime = _ArmRuntime(config=arm_cfg, kin=kin, output=output)
+				runtime = _ArmRuntime(config=arm_config, kinematics=kinematics, output=output)
 				self.arms.append(runtime)
 
-				controller = ArmTeleopController(arm_cfg, kin)
+				controller = ArmTeleopController(arm_config, kinematics)
 				controller.initialize_from_observation(output.get_observation())
 				runtime.controller = controller
 
-				if arm_cfg.camera is not None:
-					print(f'[{arm_cfg.name}] 카메라 헤드 초기화 중... (공유 포트: {arm_cfg.robot_port})')
+				if arm_config.camera is not None:
+					print(f'[{arm_config.name}] 카메라 헤드 초기화 중... (공유 포트: {arm_config.robot_port})')
 					camera_writer = output.get_camera_writer()
-					self.camera_head = CameraHeadController(arm_cfg.camera, camera_writer)
+					self.camera_head = CameraHeadController(arm_config.camera, camera_writer)
 
 			return self
 		except BaseException:
@@ -116,7 +116,7 @@ class TeleopApp:
 				last_loop_t = loop_start
 
 				poses = self.vr_system.get_all_poses()
-				any_sent = False
+				has_sent_any = False
 
 				# 카메라 헤드: get_all_poses()가 이미 받아온 결과에서 HMD
 				# 항목만 꺼내 쓰므로 별도의 openvr 호출이 필요 없습니다.
@@ -129,20 +129,20 @@ class TeleopApp:
 						else:
 							pan_deg, tilt_deg = self.camera_head.compute_and_send(hmd_rot, loop_start, dt)
 							self.display.set_camera(pan_deg, tilt_deg)
-							any_sent = True
+							has_sent_any = True
 
 				for runtime in self.arms:
-					runtime.device_idx = self.vr_system.get_controller_index(runtime.config.controller_role)
-					if runtime.device_idx is None:
+					runtime.device_index = self.vr_system.get_controller_index(runtime.config.controller_role)
+					if runtime.device_index is None:
 						continue
 
-					pose = poses[runtime.device_idx]
+					pose = poses[runtime.device_index]
 					if not pose.bPoseIsValid:
 						continue
 
-					mat = pose.mDeviceToAbsoluteTracking
-					vr_pos = self.vr_system.extract_position(mat)
-					vr_rot = self.vr_system.extract_rotation_matrix(mat)
+					pose_matrix = pose.mDeviceToAbsoluteTracking
+					vr_pos = self.vr_system.extract_position(pose_matrix)
+					vr_rot = self.vr_system.extract_rotation_matrix(pose_matrix)
 
 					if not runtime.controller.is_calibrated():
 						# 최초로 유효한 pose를 받은 프레임 -> 이번 pose를 영점으로 저장하고
@@ -150,13 +150,13 @@ class TeleopApp:
 						runtime.controller.calibrate(vr_pos, vr_rot)
 						continue
 
-					trigger = self.vr_system.get_trigger_value(runtime.device_idx)
+					trigger = self.vr_system.get_trigger_value(runtime.device_index)
 					command = runtime.controller.compute(vr_pos, vr_rot, trigger, loop_start, dt)
 					runtime.output.send(command)
 					self.display.set(runtime.config.name, command)
-					any_sent = True
+					has_sent_any = True
 
-				if any_sent:
+				if has_sent_any:
 					self.display.flush()
 
 				elapsed = time.perf_counter() - loop_start
@@ -173,9 +173,9 @@ class TeleopApp:
 		# 등) 등 여러 경로가 이 메서드를 부를 수 있습니다. 두 번째 이후
 		# 호출은 아무 것도 하지 않고 바로 리턴해서 "이미 닫힌 연결을 또
 		# disconnect()하려다 나는 경고"가 반복 출력되는 것을 막습니다.
-		if self._shutdown_done:
+		if self._is_shutdown_done:
 			return
-		self._shutdown_done = True
+		self._is_shutdown_done = True
 
 		# 카메라 토크 해제는 반드시 로봇 팔 disconnect()보다 먼저 실행합니다.
 		# disconnect()가 이 카메라와 공유 중인 시리얼 포트를 닫아버리므로,
@@ -185,17 +185,17 @@ class TeleopApp:
 				print('[camera] 카메라 모터 토크 해제 중...')
 				self.camera_head.release_torque()
 				time.sleep(0.02)
-			except Exception as e:
-				print(f'[경고] 카메라 헤드 토크 해제 중 오류: {e}')
+			except Exception as error:
+				print(f'[경고] 카메라 헤드 토크 해제 중 오류: {error}')
 
 		for runtime in self.arms:
 			try:
 				print(f'[{runtime.config.name}] 모터 토크 해제 중...')
 				runtime.output.disconnect()
-			except Exception as e:
-				print(f'[경고] [{runtime.config.name}] 로봇 연결 해제 중 오류: {e}')
+			except Exception as error:
+				print(f'[경고] [{runtime.config.name}] 로봇 연결 해제 중 오류: {error}')
 
 		try:
 			self.vr_system.shutdown()
-		except Exception as e:
-			print(f'[경고] VR 시스템 종료 중 오류: {e}')
+		except Exception as error:
+			print(f'[경고] VR 시스템 종료 중 오류: {error}')

@@ -29,15 +29,15 @@ class RobotKinematics:
 		# 대신 각 링크의 실제 joint_type을 직접 확인해서 'fixed'가 아닌 것만
 		# 진짜 활성 관절(회전 모터)로 판단합니다.
 		joint_types = [getattr(link, 'joint_type', 'fixed') for link in self.chain.links]
-		self.active_mask = np.array([jt not in ('fixed', None) for jt in joint_types])
-		n_active = int(self.active_mask.sum())
+		self.active_mask = np.array([joint_type not in ('fixed', None) for joint_type in joint_types])
+		active_joint_count = int(self.active_mask.sum())
 
 		print(f'[{self.name}][진단] IK 체인 링크:', [link.name for link in self.chain.links])
 		print(f'[{self.name}][진단] joint_type:', joint_types)
-		print(f'[{self.name}][진단] 실제 활성 관절 마스크:', self.active_mask, f'(활성 관절 수: {n_active})')
+		print(f'[{self.name}][진단] 실제 활성 관절 마스크:', self.active_mask, f'(활성 관절 수: {active_joint_count})')
 
-		assert n_active == len(self.arm_joint_keys), (
-			f'[{self.name}] 체인의 활성 관절 수({n_active})가 arm_joint_keys 길이'
+		assert active_joint_count == len(self.arm_joint_keys), (
+			f'[{self.name}] 체인의 활성 관절 수({active_joint_count})가 arm_joint_keys 길이'
 			f'({len(self.arm_joint_keys)})와 다릅니다.\n'
 			'위에 출력된 링크 목록을 보고 IKConfig.arm_joint_keys 순서/개수를 실제 URDF에 맞게 수정하세요.'
 		)
@@ -50,21 +50,21 @@ class RobotKinematics:
 		# 이 두 관절을 최적화하지 않고 seed에 넣어준 값을 그대로(순기구학
 		# 계산에는 반영하면서) 유지합니다 -> 위치 IK는 3DOF만 풀게 되어
 		# 손목 회전과 절대 간섭하지 않습니다.
-		self.wrist_flex_arm_idx = self.arm_joint_keys.index(wrist_flex_key)
-		self.wrist_roll_arm_idx = self.arm_joint_keys.index(wrist_roll_key)
-		self.wrist_flex_full_idx = int(self.active_indices[self.wrist_flex_arm_idx])
-		self.wrist_roll_full_idx = int(self.active_indices[self.wrist_roll_arm_idx])
+		self.wrist_flex_arm_index = self.arm_joint_keys.index(wrist_flex_key)
+		self.wrist_roll_arm_index = self.arm_joint_keys.index(wrist_roll_key)
+		self.wrist_flex_full_index = int(self.active_indices[self.wrist_flex_arm_index])
+		self.wrist_roll_full_index = int(self.active_indices[self.wrist_roll_arm_index])
 
 		position_only_mask = self.active_mask.copy()
-		position_only_mask[self.wrist_flex_full_idx] = False
-		position_only_mask[self.wrist_roll_full_idx] = False
-		n_position_active = int(position_only_mask.sum())
+		position_only_mask[self.wrist_flex_full_index] = False
+		position_only_mask[self.wrist_roll_full_index] = False
+		position_active_count = int(position_only_mask.sum())
 
 		print(
-			f'[{self.name}][진단] 위치 전용 IK 활성 관절 수:', n_position_active,
+			f'[{self.name}][진단] 위치 전용 IK 활성 관절 수:', position_active_count,
 			'(wrist_flex/wrist_roll 제외, 3이어야 정상)',
 		)
-		assert n_position_active == 3, (
+		assert position_active_count == 3, (
 			f'[{self.name}] 위치 전용 IK 활성 관절이 3개가 아닙니다. '
 			'arm_joint_keys 순서 또는 wrist_flex_key/wrist_roll_key 설정을 확인하세요.'
 		)
@@ -79,19 +79,19 @@ class RobotKinematics:
 		# seed를 물리적 한계 안으로 clip해서 이 악순환을 끊습니다.
 		link_bounds = [getattr(link, 'bounds', (None, None)) for link in self.chain.links]
 		self.lower_bounds_full = np.array([
-			(b[0] if (b is not None and b[0] is not None) else -np.inf) for b in link_bounds
+			(bounds[0] if (bounds is not None and bounds[0] is not None) else -np.inf) for bounds in link_bounds
 		])
 		self.upper_bounds_full = np.array([
-			(b[1] if (b is not None and b[1] is not None) else np.inf) for b in link_bounds
+			(bounds[1] if (bounds is not None and bounds[1] is not None) else np.inf) for bounds in link_bounds
 		])
 
 		self.wrist_flex_bounds_deg = (
-			float(np.degrees(self.lower_bounds_full[self.wrist_flex_full_idx])),
-			float(np.degrees(self.upper_bounds_full[self.wrist_flex_full_idx])),
+			float(np.degrees(self.lower_bounds_full[self.wrist_flex_full_index])),
+			float(np.degrees(self.upper_bounds_full[self.wrist_flex_full_index])),
 		)
 		self.wrist_roll_bounds_deg = (
-			float(np.degrees(self.lower_bounds_full[self.wrist_roll_full_idx])),
-			float(np.degrees(self.upper_bounds_full[self.wrist_roll_full_idx])),
+			float(np.degrees(self.lower_bounds_full[self.wrist_roll_full_index])),
+			float(np.degrees(self.upper_bounds_full[self.wrist_roll_full_index])),
 		)
 
 	def clip_to_bounds(self, full_angles_rad: np.ndarray) -> np.ndarray:
@@ -104,8 +104,8 @@ class RobotKinematics:
 		"""이전 IK 해를 물리적 한계 안으로 clip하고, 손목 두 관절은 이번
         프레임의 직접 계산값으로 덮어써서 IK seed를 만듭니다."""
 		seed = self.clip_to_bounds(prev_full_rad).copy()
-		seed[self.wrist_flex_full_idx] = wrist_flex_rad
-		seed[self.wrist_roll_full_idx] = wrist_roll_rad
+		seed[self.wrist_flex_full_index] = wrist_flex_rad
+		seed[self.wrist_roll_full_index] = wrist_roll_rad
 		return seed
 
 	def solve_position_ik(self, target_pos: np.ndarray, seed: np.ndarray) -> np.ndarray:
@@ -120,10 +120,10 @@ class RobotKinematics:
 
 	def print_joint_diagnostics(self, initial_arm_deg: np.ndarray) -> None:
 		print(f'[{self.name}][진단] 관절 한계(deg) vs 현재 각도:')
-		for key, idx, cur_deg in zip(self.arm_joint_keys, self.active_indices, initial_arm_deg):
-			lo = self.lower_bounds_full[idx]
-			hi = self.upper_bounds_full[idx]
-			lo_deg = np.degrees(lo) if np.isfinite(lo) else -np.inf
-			hi_deg = np.degrees(hi) if np.isfinite(hi) else np.inf
-			flag = ' <-- 이미 한계 밖!' if not (lo_deg - 1e-6 <= cur_deg <= hi_deg + 1e-6) else ''
-			print(f'    [{self.name}] {key:20s}: [{lo_deg:8.1f}, {hi_deg:8.1f}]   현재: {cur_deg:8.1f}{flag}')
+		for key, index, current_deg in zip(self.arm_joint_keys, self.active_indices, initial_arm_deg):
+			lower_rad = self.lower_bounds_full[index]
+			upper_rad = self.upper_bounds_full[index]
+			lower_deg = np.degrees(lower_rad) if np.isfinite(lower_rad) else -np.inf
+			upper_deg = np.degrees(upper_rad) if np.isfinite(upper_rad) else np.inf
+			warning = ' <-- 이미 한계 밖!' if not (lower_deg - 1e-6 <= current_deg <= upper_deg + 1e-6) else ''
+			print(f'    [{self.name}] {key:20s}: [{lower_deg:8.1f}, {upper_deg:8.1f}]   현재: {current_deg:8.1f}{warning}')

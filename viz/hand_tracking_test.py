@@ -61,8 +61,8 @@ def build_action_manifest(target_dir: Path) -> Path:
 	# 기존 vr_skeletal_tracker_viz.py 와 동일한 경로를 사용해
 	# SteamVR이 같은 앱/바인딩으로 인식할 가능성을 높인다.
 	manifest_path = target_dir / 'handviz_actions.json'
-	with open(manifest_path, 'w', encoding='utf-8') as f:
-		json.dump(manifest, f, indent=2, ensure_ascii=False)
+	with open(manifest_path, 'w', encoding='utf-8') as manifest_file:
+		json.dump(manifest, manifest_file, indent=2, ensure_ascii=False)
 	return manifest_path
 
 
@@ -76,16 +76,16 @@ def describe_tracked_devices(vr_system: 'openvr.IVRSystem') -> None:
 		openvr.TrackedDeviceClass_GenericTracker: 'GenericTracker',
 		openvr.TrackedDeviceClass_TrackingReference: 'TrackingReference',
 	}
-	found_any = False
+	has_found_device = False
 	for i in range(openvr.k_unMaxTrackedDeviceCount):
 		try:
-			dev_class = vr_system.getTrackedDeviceClass(i)
+			device_class = vr_system.getTrackedDeviceClass(i)
 		except Exception:
 			continue
-		if dev_class == openvr.TrackedDeviceClass_Invalid:
+		if device_class == openvr.TrackedDeviceClass_Invalid:
 			continue
-		found_any = True
-		connected = vr_system.isTrackedDeviceConnected(i)
+		has_found_device = True
+		is_connected = vr_system.isTrackedDeviceConnected(i)
 		try:
 			model = vr_system.getStringTrackedDeviceProperty(
 				i, openvr.Prop_RenderModelName_String
@@ -93,10 +93,10 @@ def describe_tracked_devices(vr_system: 'openvr.IVRSystem') -> None:
 		except Exception:
 			model = '?'
 		print(
-			f'  장치 #{i:>2}  class={class_names.get(dev_class, dev_class):<18} '
-			f'connected={connected}  model={model}'
+			f'  장치 #{i:>2}  class={class_names.get(device_class, device_class):<18} '
+			f'connected={is_connected}  model={model}'
 		)
-	if not found_any:
+	if not has_found_device:
 		print('  (연결된 장치가 하나도 없습니다 — SteamVR/ALVR 연결부터 확인하세요)')
 	print('-' * 60)
 
@@ -105,11 +105,11 @@ def describe_action_origins(vr_input: 'openvr.IVRInput', action_set_handle: int,
 	"""이 액션이 실제로 어떤 입력 소스(장치)에 바인딩되어 있는지 확인."""
 	try:
 		origins = vr_input.getActionOrigins(action_set_handle, action_handle, 16)
-	except Exception as exc:
-		print(f'    [{label}] getActionOrigins 호출 실패: {exc}')
+	except Exception as error:
+		print(f'    [{label}] getActionOrigins 호출 실패: {error}')
 		return
 
-	valid_origins = [o for o in origins if o != openvr.k_ulInvalidInputValueHandle]
+	valid_origins = [o for origin in origins if origin != openvr.k_ulInvalidInputValueHandle]
 	if not valid_origins:
 		print(f'    [{label}] ⚠ 바인딩된 입력 소스가 없습니다 (binding 문제일 가능성 높음)')
 		return
@@ -128,10 +128,10 @@ def describe_action_origins(vr_input: 'openvr.IVRInput', action_set_handle: int,
 def main() -> None:
 	try:
 		openvr.init(openvr.VRApplication_Background)
-	except Exception as exc:
+	except Exception as error:
 		sys.exit(
 			'[오류] SteamVR에 연결하지 못했습니다. SteamVR/ALVR 연결 상태를 확인하세요.\n'
-			f'원본 오류: {exc}'
+			f'원본 오류: {error}'
 		)
 
 	try:
@@ -163,7 +163,7 @@ def main() -> None:
 			'    -> 손을 카메라 앞에서 움직였을 때 좌표 값이 계속 바뀌면 정상입니다.\n'
 		)
 
-		last_print = 0.0
+		last_print_time = 0.0
 		while True:
 			action_set = openvr.VRActiveActionSet_t()
 			action_set.ulActionSet = action_set_handle
@@ -172,8 +172,8 @@ def main() -> None:
 			vr_input.updateActionState([action_set])
 
 			now = time.time()
-			if now - last_print >= 0.5:
-				last_print = now
+			if now - last_print_time >= 0.5:
+				last_print_time = now
 				timestamp = time.strftime('%H:%M:%S')
 				print(f'--- {timestamp} ' + '-' * 40)
 
@@ -181,14 +181,14 @@ def main() -> None:
 					action_handle = action_handles[hand]
 					try:
 						action_data = vr_input.getSkeletalActionData(action_handle)
-					except Exception as exc:
-						print(f'  [{hand}] getSkeletalActionData 오류: {exc}')
+					except Exception as error:
+						print(f'  [{hand}] getSkeletalActionData 오류: {error}')
 						continue
 
-					active = getattr(action_data, 'bActive', False)
+					is_active = getattr(action_data, 'bActive', False)
 					bone_count = getattr(action_data, 'boneCount', 0)
 
-					if not active:
+					if not is_active:
 						print(f'  [{hand}] bActive=False  (바인딩 또는 트래킹 유실)')
 						continue
 
@@ -199,16 +199,16 @@ def main() -> None:
 							openvr.VRSkeletalMotionRange_WithoutController,
 							bone_count or 31,
 						)
-					except Exception as exc:
-						print(f'  [{hand}] getSkeletalBoneData 오류: {exc}')
+					except Exception as error:
+						print(f'  [{hand}] getSkeletalBoneData 오류: {error}')
 						continue
 
 					sample_strs = []
-					for name, idx in SAMPLE_BONES.items():
-						if idx < len(bones):
-							p = bones[idx].position.v
+					for name, bone_index in SAMPLE_BONES.items():
+						if bone_index < len(bones):
+							position = bones[bone_index].position.v
 							sample_strs.append(
-								f'{name}=({p[0]:+.3f}, {p[1]:+.3f}, {p[2]:+.3f})'
+								f'{name}=({position[0]:+.3f}, {position[1]:+.3f}, {position[2]:+.3f})'
 							)
 					print(
 						f'  [{hand}] bActive=True boneCount={bone_count}  '
