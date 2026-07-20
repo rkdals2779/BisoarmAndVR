@@ -11,20 +11,20 @@ import numpy as np
 
 
 class OneEuroFilter:
-	def __init__(self, min_cutoff: float = 1.0, beta: float = 0.0, d_cutoff: float = 1.0):
+	def __init__(self, min_cutoff: float = 1.0, beta: float = 0.0, d_cutoff: float = 1.0) -> None:
 		self.min_cutoff = min_cutoff
 		self.beta = beta
 		self.d_cutoff = d_cutoff
-		self.x_prev = None
-		self.dx_prev = None
-		self.t_prev = None
+		self.x_prev: np.ndarray | None = None
+		self.dx_prev: np.ndarray | None = None
+		self.t_prev: float | None = None
 
 	@staticmethod
-	def _alpha(dt, cutoff):
+	def _alpha(dt: float, cutoff: float) -> float:
 		tau = 1.0 / (2 * np.pi * cutoff)
 		return 1.0 / (1.0 + tau / dt)
 
-	def filter(self, x, t):
+	def filter(self, x: np.ndarray, t: float) -> np.ndarray:
 		x = np.asarray(x, dtype=float)
 
 		if self.t_prev is None:

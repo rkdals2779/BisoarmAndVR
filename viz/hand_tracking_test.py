@@ -24,6 +24,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
+from typing import Final
 
 try:
 	import openvr
@@ -31,12 +32,12 @@ except ImportError:
 	sys.exit('[오류] pip install openvr 로 openvr 패키지를 먼저 설치하세요.')
 
 
-ACTION_SET_PATH = '/actions/handviz'
-ACTION_LEFT = '/actions/handviz/in/lefthand_anim'
-ACTION_RIGHT = '/actions/handviz/in/righthand_anim'
+ACTION_SET_PATH: Final[str] = '/actions/handviz'
+ACTION_LEFT: Final[str] = '/actions/handviz/in/lefthand_anim'
+ACTION_RIGHT: Final[str] = '/actions/handviz/in/righthand_anim'
 
 # 손목(1)과 검지 끝 보조 뼈(27번, Aux_IndexFinger)만 샘플로 출력한다.
-SAMPLE_BONES = {'Wrist': 1, 'IndexTip(Aux)': 27}
+SAMPLE_BONES: Final[dict[str, int]] = {'Wrist': 1, 'IndexTip(Aux)': 27}
 
 
 def build_action_manifest(target_dir: Path) -> Path:
@@ -65,7 +66,7 @@ def build_action_manifest(target_dir: Path) -> Path:
 	return manifest_path
 
 
-def describe_tracked_devices(vr_system):
+def describe_tracked_devices(vr_system: 'openvr.IVRSystem') -> None:
 	print('\n[1] 현재 SteamVR에 연결된 트래킹 장치')
 	print('-' * 60)
 	class_names = {
@@ -100,7 +101,7 @@ def describe_tracked_devices(vr_system):
 	print('-' * 60)
 
 
-def describe_action_origins(vr_input, action_set_handle, action_handle, label):
+def describe_action_origins(vr_input: 'openvr.IVRInput', action_set_handle: int, action_handle: int, label: str) -> None:
 	"""이 액션이 실제로 어떤 입력 소스(장치)에 바인딩되어 있는지 확인."""
 	try:
 		origins = vr_input.getActionOrigins(action_set_handle, action_handle, 16)
@@ -124,7 +125,7 @@ def describe_action_origins(vr_input, action_set_handle, action_handle, label):
 		print(f'    [{label}] 바인딩된 입력 소스: {name if name else origin}')
 
 
-def main():
+def main() -> None:
 	try:
 		openvr.init(openvr.VRApplication_Background)
 	except Exception as exc:

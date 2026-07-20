@@ -12,7 +12,6 @@ config에 정의된 팔(들)을 받아서
 
 import time
 from dataclasses import dataclass
-from typing import List, Optional
 
 from .camera_head import CameraHeadController
 from .config import ArmConfig, TeleopConfig
@@ -32,23 +31,23 @@ class _ArmRuntime:
 	# 바로 self.arms에 등록해서, 그 뒤 단계(controller 초기화, 카메라
 	# writer 탐색 등)에서 예외가 나도 shutdown()이 이 팔을 찾아 토크를
 	# 해제할 수 있게 합니다. 그래서 controller는 처음엔 None일 수 있습니다.
-	controller: Optional[ArmTeleopController] = None
-	device_idx: Optional[int] = None
+	controller: ArmTeleopController | None = None
+	device_idx: int | None = None
 
 
 class TeleopApp:
-	def __init__(self, teleop_config: TeleopConfig):
+	def __init__(self, teleop_config: TeleopConfig) -> None:
 		if not teleop_config.arms:
 			raise ValueError('TeleopConfig.arms가 비어 있습니다. 최소 1개의 ArmConfig가 필요합니다.')
 		self.config = teleop_config
 		self.vr_system = VRSystem()
-		self.arms: List[_ArmRuntime] = []
+		self.arms: list[_ArmRuntime] = []
 		self.display = ConsoleStatusDisplay()
 
 		# 팔 개수(1~2)와 무관하게, camera가 설정된 ArmConfig가 있으면
 		# (기본: 왼팔) 카메라 헤드도 함께 초기화합니다. 그 팔의 RobotOutput이
 		# 이미 열어놓은 시리얼 연결을 공유해서 쓰므로 별도 포트는 열지 않습니다.
-		self.camera_head: Optional[CameraHeadController] = None
+		self.camera_head: CameraHeadController | None = None
 
 		# shutdown()이 여러 경로(run()의 finally, setup() 실패 시 정리,
 		# main()의 최종 안전망 등)에서 중복 호출될 수 있으므로, 실제
@@ -103,7 +102,7 @@ class TeleopApp:
 			raise
 
 	# ------------------------------------------------------------
-	def run(self):
+	def run(self) -> None:
 		dt_nominal = self.config.dt_nominal
 		last_loop_t = time.perf_counter()
 		try:
@@ -169,7 +168,7 @@ class TeleopApp:
 			self.shutdown()
 
 	# ------------------------------------------------------------
-	def shutdown(self):
+	def shutdown(self) -> None:
 		# run()의 finally, setup() 실패 시 정리, main()의 최종 안전망(atexit
 		# 등) 등 여러 경로가 이 메서드를 부를 수 있습니다. 두 번째 이후
 		# 호출은 아무 것도 하지 않고 바로 리턴해서 "이미 닫힌 연결을 또

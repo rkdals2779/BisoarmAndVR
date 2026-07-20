@@ -14,12 +14,13 @@ import argparse
 import atexit
 import dataclasses
 import signal
+from types import FrameType
 
 from vr_teleop.app import TeleopApp
 from vr_teleop.config import TeleopConfig, get_arm_configs
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
 	parser = argparse.ArgumentParser(description='VR 텔레옵 컨트롤러')
 	parser.add_argument(
 		'--mode', choices=['left', 'right', 'dual'], default='dual',
@@ -36,7 +37,7 @@ def parse_args():
 	return parser.parse_args()
 
 
-def main():
+def main() -> None:
 	args = parse_args()
 	arms = get_arm_configs(args.mode)
 	if args.no_camera:
@@ -61,7 +62,7 @@ def main():
 	# 거치지 않고 즉시 프로세스를 종료시켜서 모터 토크가 켜진 채로 남습니다.
 	# 그래서 SIGTERM도 KeyboardInterrupt로 변환해 기존 종료 경로(및 그
 	# finally의 shutdown())를 그대로 타도록 만듭니다.
-	def _handle_sigterm(signum, frame):
+	def _handle_sigterm(signum: int, frame: FrameType | None) -> None:
 		raise KeyboardInterrupt
 
 	signal.signal(signal.SIGTERM, _handle_sigterm)

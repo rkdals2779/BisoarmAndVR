@@ -29,7 +29,6 @@ VR 컨트롤러의 raw 위치/회전과 로봇 관측값을 입력으로 받아�
 """
 
 from dataclasses import dataclass
-from typing import Optional
 
 import numpy as np
 
@@ -43,7 +42,7 @@ from .trajectory import JointTrajectoryController
 @dataclass
 class ArmCommand:
 	"""이번 프레임에 실제로 로봇에 보낼 값 + 상태 표시용 정보"""
-	joint_deg: dict            # {joint_key: deg, ...} (그리퍼 제외)
+	joint_deg: dict[str, float]  # {joint_key: deg, ...} (그리퍼 제외)
 	gripper_deg: float
 	target_pos: np.ndarray
 	wrist_flex_deg: float
@@ -54,7 +53,7 @@ class ArmTeleopController:
 	"""VR 컨트롤러 한쪽 + 로봇 한 대에 대한 텔레옵 계산 상태 머신.
     양팔 모드에서는 왼쪽/오른쪽 각각 독립된 인스턴스를 만들어 쓰면 됩니다."""
 
-	def __init__(self, arm_config: ArmConfig, kinematics: RobotKinematics):
+	def __init__(self, arm_config: ArmConfig, kinematics: RobotKinematics) -> None:
 		self.config = arm_config
 		self.kin = kinematics
 
@@ -74,17 +73,17 @@ class ArmTeleopController:
 			max_acc_deg_s2=arm_config.trajectory.max_acc_deg_s2,
 		)
 
-		self._vr_home_pos: Optional[np.ndarray] = None
-		self._vr_home_rot: Optional[np.ndarray] = None
+		self._vr_home_pos: np.ndarray | None = None
+		self._vr_home_rot: np.ndarray | None = None
 		self._wrist_flex_home_deg = 0.0
 		self._wrist_roll_home_deg = 0.0
-		self._prev_target_pos: Optional[np.ndarray] = None
-		self._prev_ik_solution_full: Optional[np.ndarray] = None
+		self._prev_target_pos: np.ndarray | None = None
+		self._prev_ik_solution_full: np.ndarray | None = None
 
 	# ------------------------------------------------------------
 	# 초기화 / 영점 조절
 	# ------------------------------------------------------------
-	def initialize_from_observation(self, obs: dict):
+	def initialize_from_observation(self, obs: dict[str, float]) -> None:
 		"""로봇의 실제 현재 관절각으로 궤적/손목 영점을 초기화합니다.
         (추측값이 아니라 관측값으로 시작해야 시작 순간 로봇이 튀지 않습니다.)
         VR 캘리브레이션(calibrate)과는 별개로, 로봇에 연결한 직후 한 번만
@@ -105,7 +104,7 @@ class ArmTeleopController:
 		"""VR 컨트롤러 영점(home pose)이 설정되었는지 여부."""
 		return self._vr_home_pos is not None
 
-	def calibrate(self, vr_pos: np.ndarray, vr_rot: np.ndarray):
+	def calibrate(self, vr_pos: np.ndarray, vr_rot: np.ndarray) -> None:
 		"""이번 컨트롤러 pose를 '영점'으로 저장합니다. 최초로 유효한 pose를
         받은 프레임에서 1회 호출하면 되고, 이 시점 이후의 컨트롤러 델타만큼만
         로봇이 움직입니다."""

@@ -19,7 +19,7 @@ control.py/app.py는 팔이 1개든 2개든 완전히 동일한 코드로 동작
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Final
 
 import numpy as np
 
@@ -128,7 +128,7 @@ class IKConfig:
     """
 	urdf_path: str
 	skip_threshold_m: float = 0.001
-	arm_joint_keys: List[str] = field(default_factory=lambda: [
+	arm_joint_keys: list[str] = field(default_factory=lambda: [
 		'shoulder_pan.pos',
 		'shoulder_lift.pos',
 		'elbow_flex.pos',
@@ -150,7 +150,7 @@ class ArmConfig:
 	scale_factor: float = 0.8            # VR 이동량 -> 로봇 이동량 배율
 	# 로봇이 반대쪽(거울 대칭)으로 장착되어 특정 축이 반대로 움직이면
 	# 여기서 -1.0으로 뒤집으세요. (x, y, z) 순서, 기본은 뒤집지 않음.
-	axis_signs: Tuple[float, float, float] = (1.0, 1.0, 1.0)
+	axis_signs: tuple[float, float, float] = (1.0, 1.0, 1.0)
 
 	position_filter: OneEuroFilterConfig = field(
 		default_factory=lambda: OneEuroFilterConfig(min_cutoff=0.8, beta=1.0, d_cutoff=1.0)
@@ -163,14 +163,14 @@ class ArmConfig:
 	# 모터가 함께 달려 있는 경우에만 설정하세요 (예: 왼팔 = /dev/ttyACM0에
 	# 카메라 모터 id 7/8도 데이지체인으로 연결된 경우). None이면 카메라
 	# 기능은 아예 동작하지 않습니다.
-	camera: Optional[CameraHeadConfig] = None
+	camera: CameraHeadConfig | None = None
 
 
 @dataclass
 class TeleopConfig:
 	"""실행할 팔들의 목록 + 공용 제어 주기"""
 	control_hz: float = 50.0
-	arms: List[ArmConfig] = field(default_factory=list)
+	arms: list[ArmConfig] = field(default_factory=list)
 
 	@property
 	def dt_nominal(self) -> float:
@@ -186,10 +186,10 @@ class TeleopConfig:
 # ============================================================
 # 레포 루트 기준 상대 경로로 URDF를 찾습니다 (개인 PC 절대 경로 하드코딩 금지).
 # config.py 위치: {레포루트}/src/vr_teleop_modular_with_camera/vr_teleop/config.py
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-URDF_PATH_DEFAULT = str(_REPO_ROOT / 'urdf' / 'so101_new_calib.urdf')
+_REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[3]
+URDF_PATH_DEFAULT: Final[str] = str(_REPO_ROOT / 'urdf' / 'so101_new_calib.urdf')
 
-RIGHT_ARM_CONFIG = ArmConfig(
+RIGHT_ARM_CONFIG: Final[ArmConfig] = ArmConfig(
 	name='right_arm',
 	controller_role=ControllerRole.RIGHT,
 	robot_id='skm_right_follower',
@@ -198,7 +198,7 @@ RIGHT_ARM_CONFIG = ArmConfig(
 	ik=IKConfig(urdf_path=URDF_PATH_DEFAULT),
 )
 
-LEFT_ARM_CONFIG = ArmConfig(
+LEFT_ARM_CONFIG: Final[ArmConfig] = ArmConfig(
 	name='left_arm',
 	controller_role=ControllerRole.LEFT,
 	robot_id='skm_left_follower',
@@ -217,7 +217,7 @@ LEFT_ARM_CONFIG = ArmConfig(
 )
 
 
-def get_arm_configs(mode: str) -> List[ArmConfig]:
+def get_arm_configs(mode: str) -> list[ArmConfig]:
 	"""
     mode:
         "right" -> 오른쪽 컨트롤러 1개로 오른팔 로봇만 제어 (단일팔)

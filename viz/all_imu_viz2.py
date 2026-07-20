@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from collections import deque
 
 
-def extract_euler_from_matrix(mat):
+def extract_euler_from_matrix(mat: 'openvr.HmdMatrix34_t') -> tuple[float, float, float]:
 	"""OpenVR 3x4 변환 행렬에서 오차에 안전한 atan2 방식으로 Roll, Pitch, Yaw(도) 추출"""
 	pitch = math.degrees(math.atan2(-mat[1][2], math.sqrt(mat[0][2] ** 2 + mat[2][2] ** 2)))
 	yaw = math.degrees(math.atan2(mat[0][2], mat[2][2]))
@@ -14,7 +14,7 @@ def extract_euler_from_matrix(mat):
 	return roll, pitch, yaw
 
 
-def find_vr_device_indices(vr_system):
+def find_vr_device_indices(vr_system: 'openvr.IVRSystem') -> dict[str, int | None]:
 	"""현재 연결된 HMD 및 좌우 컨트롤러의 고유 인덱스를 자동 탐색"""
 	devices = {'hmd': openvr.k_unTrackedDeviceIndex_Hmd, 'left_ctrl': None, 'right_ctrl': None}
 
@@ -29,7 +29,7 @@ def find_vr_device_indices(vr_system):
 	return devices
 
 
-def update_quiver_axes(ax, mat, x, y, z, quivers_list, scale=0.25):
+def update_quiver_axes(ax: 'plt.Axes', mat: 'openvr.HmdMatrix34_t', x: float, y: float, z: float, quivers_list: list, scale: float = 0.25) -> None:
 	"""해당 장치의 변환 행렬을 기반으로 3D 공간에 R(X), G(Y), B(Z) 화살표 축을 플로팅"""
 	q_x = ax.quiver(x, z, y, mat[0][0], mat[2][0], mat[1][0], color='red', length=scale, normalize=True, lw=1.5)
 	q_y = ax.quiver(x, z, y, mat[0][1], mat[2][1], mat[1][1], color='green', length=scale, normalize=True, lw=1.5)

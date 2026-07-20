@@ -16,7 +16,7 @@ from .config import IKConfig
 
 
 class RobotKinematics:
-	def __init__(self, ik_config: IKConfig, wrist_flex_key: str, wrist_roll_key: str, name: str = 'arm'):
+	def __init__(self, ik_config: IKConfig, wrist_flex_key: str, wrist_roll_key: str, name: str = 'arm') -> None:
 		self.config = ik_config
 		self.name = name
 		self.arm_joint_keys = list(ik_config.arm_joint_keys)
@@ -94,13 +94,13 @@ class RobotKinematics:
 			float(np.degrees(self.upper_bounds_full[self.wrist_roll_full_idx])),
 		)
 
-	def clip_to_bounds(self, full_angles_rad):
+	def clip_to_bounds(self, full_angles_rad: np.ndarray) -> np.ndarray:
 		return np.clip(full_angles_rad, self.lower_bounds_full, self.upper_bounds_full)
 
-	def zeros_full(self):
+	def zeros_full(self) -> np.ndarray:
 		return np.zeros(len(self.chain.links))
 
-	def build_seed(self, prev_full_rad, wrist_flex_rad, wrist_roll_rad):
+	def build_seed(self, prev_full_rad: np.ndarray, wrist_flex_rad: float, wrist_roll_rad: float) -> np.ndarray:
 		"""이전 IK 해를 물리적 한계 안으로 clip하고, 손목 두 관절은 이번
         프레임의 직접 계산값으로 덮어써서 IK seed를 만듭니다."""
 		seed = self.clip_to_bounds(prev_full_rad).copy()
@@ -108,17 +108,17 @@ class RobotKinematics:
 		seed[self.wrist_roll_full_idx] = wrist_roll_rad
 		return seed
 
-	def solve_position_ik(self, target_pos, seed):
+	def solve_position_ik(self, target_pos: np.ndarray, seed: np.ndarray) -> np.ndarray:
 		angles_full = self.chain.inverse_kinematics(
 			target_position=target_pos,
 			initial_position=seed,
 		)
 		return self.clip_to_bounds(angles_full)
 
-	def full_to_arm_deg(self, full_angles_rad):
+	def full_to_arm_deg(self, full_angles_rad: np.ndarray) -> np.ndarray:
 		return np.degrees(np.asarray(full_angles_rad)[self.active_mask])
 
-	def print_joint_diagnostics(self, initial_arm_deg):
+	def print_joint_diagnostics(self, initial_arm_deg: np.ndarray) -> None:
 		print(f'[{self.name}][진단] 관절 한계(deg) vs 현재 각도:')
 		for key, idx, cur_deg in zip(self.arm_joint_keys, self.active_indices, initial_arm_deg):
 			lo = self.lower_bounds_full[idx]

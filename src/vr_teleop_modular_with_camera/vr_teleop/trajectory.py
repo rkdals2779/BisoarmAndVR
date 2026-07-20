@@ -17,19 +17,19 @@ import numpy as np
 
 
 class JointTrajectoryController:
-	def __init__(self, kp: float, max_vel_deg_s: float, max_acc_deg_s2: float):
+	def __init__(self, kp: float, max_vel_deg_s: float, max_acc_deg_s2: float) -> None:
 		self.kp = kp
 		self.kd = 2.0 * np.sqrt(kp)  # 임계감쇠 조건
 		self.max_vel = max_vel_deg_s
 		self.max_acc = max_acc_deg_s2
-		self.pos = None
-		self.vel = None
+		self.pos: np.ndarray | None = None
+		self.vel: np.ndarray | None = None
 
-	def reset(self, pos_deg):
+	def reset(self, pos_deg: np.ndarray) -> None:
 		self.pos = np.asarray(pos_deg, dtype=float).copy()
 		self.vel = np.zeros_like(self.pos)
 
-	def update(self, target_deg, dt):
+	def update(self, target_deg: np.ndarray, dt: float) -> np.ndarray:
 		target_deg = np.asarray(target_deg, dtype=float)
 		if self.pos is None:
 			self.reset(target_deg)

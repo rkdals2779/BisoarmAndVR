@@ -19,9 +19,9 @@ from .control import ArmCommand
 class RobotOutput:
 	"""SO-101 팔로워 로봇 한 대에 대한 연결/관측/명령 전송을 감싸는 출력부."""
 
-	def __init__(self, arm_config: ArmConfig):
+	def __init__(self, arm_config: ArmConfig) -> None:
 		self.config = arm_config
-		self.robot = None
+		self.robot: SO101Follower | None = None
 
 	def connect(self) -> 'RobotOutput':
 		print(f'[{self.config.name}] 로봇 초기화 중... (port={self.config.robot_port})')
@@ -40,15 +40,15 @@ class RobotOutput:
 		self.robot.connect()
 		return self
 
-	def get_observation(self) -> dict:
+	def get_observation(self) -> dict[str, float]:
 		return self.robot.get_observation()
 
-	def send(self, command: ArmCommand):
+	def send(self, command: ArmCommand) -> None:
 		action = dict(command.joint_deg)
 		action[self.config.gripper.key] = command.gripper_deg
 		self.robot.send_action(action)
 
-	def get_camera_writer(self) -> 'SharedFeetechWriter | None':
+	def get_camera_writer(self) -> SharedFeetechWriter | None:
 		"""
         이 팔의 config에 camera(CameraHeadConfig)가 설정되어 있으면, 이
         로봇이 이미 열어놓은 시리얼 연결을 그대로 공유하는 SharedFeetechWriter를
@@ -75,7 +75,7 @@ class RobotOutput:
 			)
 		return SharedFeetechWriter(shared)
 
-	def disconnect(self):
+	def disconnect(self) -> None:
 		if self.robot is not None:
 			self.robot.disconnect()
 
@@ -84,11 +84,11 @@ class ConsoleStatusDisplay:
 	"""팔이 1개(단일팔)든 2개(양팔)든 매 프레임 한 줄로 갱신되는 상태 표시.
     사용법: 루프마다 각 팔에 대해 set()을 호출한 뒤, 마지막에 flush() 1회."""
 
-	def __init__(self):
-		self._parts: dict = {}
+	def __init__(self) -> None:
+		self._parts: dict[str, str] = {}
 
 	@staticmethod
-	def print_calibration_prompt(seconds: int = 3):
+	def print_calibration_prompt(seconds: int = 3) -> None:
 		print('\n==================================================')
 		print(' 컨트롤러를 편한 위치와 방향으로 들고 대기하세요. (영점 조절)')
 		for i in range(seconds, 0, -1):
@@ -97,7 +97,7 @@ class ConsoleStatusDisplay:
 		print('\n[동기화 완료] 추종을 시작합니다! (종료: Ctrl+C)')
 		print('==================================================\n')
 
-	def set(self, name: str, command: ArmCommand):
+	def set(self, name: str, command: ArmCommand) -> None:
 		pos = command.target_pos
 		self._parts[name] = (
 			f'[{name}] XYZ:[{pos[0]:.3f},{pos[1]:.3f},{pos[2]:.3f}] '
@@ -105,10 +105,10 @@ class ConsoleStatusDisplay:
 			f'grip:{command.gripper_deg:5.1f}'
 		)
 
-	def set_camera(self, pan_deg: float, tilt_deg: float):
+	def set_camera(self, pan_deg: float, tilt_deg: float) -> None:
 		self._parts['camera'] = f'[camera] Pan:{pan_deg:6.1f} Tilt:{tilt_deg:6.1f}'
 
-	def flush(self):
+	def flush(self) -> None:
 		if not self._parts:
 			return
 		line = '  |  '.join(self._parts[name] for name in self._parts)

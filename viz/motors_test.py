@@ -2,7 +2,7 @@ import serial
 import time
 
 
-def scan_feetech_motors(port='/dev/ttyACM0', baudrate=1000000, max_id=15):
+def scan_feetech_motors(port: str = '/dev/ttyACM0', baudrate: int = 1000000, max_id: int = 15) -> None:
 	print(f'🔍 포트 {port}에서 1부터 {max_id}까지 모터 ID를 스캔합니다... (통신속도: {baudrate})')
 
 	try:

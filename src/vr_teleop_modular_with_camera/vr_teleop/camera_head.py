@@ -26,8 +26,6 @@ find_shared_serial()로 로봇 팔 쪽(RobotOutput.robot)이 이미 열어놓은
 쓰기 주체를 하나로 유지하는 것이 근본적인 해결책입니다.
 """
 
-from typing import Optional
-
 import time
 
 import numpy as np
@@ -42,7 +40,7 @@ from .trajectory import JointTrajectoryController
 # ============================================================
 # 공유 시리얼 연결 탐색
 # ============================================================
-def find_shared_serial(obj, _seen: Optional[set] = None, _depth: int = 0, _max_depth: int = 6) -> Optional[serial.Serial]:
+def find_shared_serial(obj: object, _seen: set[int] | None = None, _depth: int = 0, _max_depth: int = 6) -> serial.Serial | None:
 	"""
     obj(예: lerobot의 SO101Follower 인스턴스)의 속성들을 재귀적으로 뒤져서
     이미 열려 있는 serial.Serial 인스턴스를 찾아 반환합니다.
@@ -89,10 +87,10 @@ class SharedFeetechWriter:
     빌려서 쓰기만 합니다.
     """
 
-	def __init__(self, shared_serial: serial.Serial):
+	def __init__(self, shared_serial: serial.Serial) -> None:
 		self.ser = shared_serial
 
-	def write_position(self, motor_id: int, pos_deg: float):
+	def write_position(self, motor_id: int, pos_deg: float) -> None:
 		# 0~360도를 0~4095로 변환
 		pos_counts = int(pos_deg * 4096 / 360.0)
 		pos_counts = max(0, min(4095, pos_counts))
@@ -110,7 +108,7 @@ class SharedFeetechWriter:
 		])
 		self.ser.write(packet)
 
-	def release_torque(self, motor_id: int):
+	def release_torque(self, motor_id: int) -> None:
 		"""토크를 해제해서 손으로 굴릴 수 있는 Free 상태로 만듭니다."""
 		length = 4
 		cmd = 0x03
@@ -121,7 +119,7 @@ class SharedFeetechWriter:
 		packet = bytearray([0xFF, 0xFF, motor_id, length, cmd, addr, val, checksum])
 		self.ser.write(packet)
 
-	def flush_input(self):
+	def flush_input(self) -> None:
 		"""공유 시리얼 포트의 입력 버퍼를 비웁니다.
 
         이 writer로 보낸 패킷(위치/토크해제)에 대해 우리는 응답을 읽지
@@ -152,7 +150,7 @@ class CameraHeadController:
     compute)을 따르므로 app.py의 메인 루프에 그대로 끼워 넣을 수 있습니다.
     """
 
-	def __init__(self, config: CameraHeadConfig, writer: SharedFeetechWriter):
+	def __init__(self, config: CameraHeadConfig, writer: SharedFeetechWriter) -> None:
 		self.config = config
 		self.writer = writer
 
@@ -168,18 +166,18 @@ class CameraHeadController:
 		)
 		self.trajectory.reset([config.pan_home_deg, config.tilt_home_deg])
 
-		self._home_rot: Optional[np.ndarray] = None
+		self._home_rot: np.ndarray | None = None
 
 	def is_calibrated(self) -> bool:
 		return self._home_rot is not None
 
-	def calibrate(self, hmd_rot: np.ndarray):
+	def calibrate(self, hmd_rot: np.ndarray) -> None:
 		"""이번 HMD 방향을 영점으로 저장하고, 모터를 홈 포지션으로 보냅니다."""
 		self._home_rot = hmd_rot.copy()
 		self.writer.write_position(self.config.pan_motor_id, self.config.pan_home_deg)
 		self.writer.write_position(self.config.tilt_motor_id, self.config.tilt_home_deg)
 
-	def compute_and_send(self, hmd_rot: np.ndarray, t: float, dt: float):
+	def compute_and_send(self, hmd_rot: np.ndarray, t: float, dt: float) -> tuple[float, float]:
 		"""calibrate()가 이미 호출된 상태에서 매 프레임 호출합니다.
         반환값은 (pan_deg, tilt_deg) - 콘솔 상태 표시용."""
 		cfg = self.config
@@ -198,7 +196,7 @@ class CameraHeadController:
 		self.writer.write_position(cfg.tilt_motor_id, float(smoothed[1]))
 		return float(smoothed[0]), float(smoothed[1])
 
-	def release_torque(self):
+	def release_torque(self) -> None:
 		self.writer.release_torque(self.config.pan_motor_id)
 		self.writer.release_torque(self.config.tilt_motor_id)
 		# 서보가 쓰기 명령에도 응답하도록 설정되어 있을 경우를 대비해,

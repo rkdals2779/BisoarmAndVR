@@ -7,16 +7,18 @@ OpenVR pose 행렬에서 위치/회전을 뽑아내고, 회전행렬에서 pitch
 유닛 테스트에서도 그대로 재사용할 수 있습니다.
 """
 
+from collections.abc import Sequence
+
 import numpy as np
 from scipy.spatial.transform import Rotation as ScipyRotation
 
 
-def extract_position(pose_matrix) -> np.ndarray:
+def extract_position(pose_matrix: Sequence[Sequence[float]]) -> np.ndarray:
 	"""pyopenvr의 HmdMatrix34_t(3x4)에서 위치(XYZ) 성분만 뽑아냅니다."""
 	return np.array([pose_matrix[0][3], pose_matrix[1][3], pose_matrix[2][3]])
 
 
-def extract_rotation_matrix(pose_matrix) -> np.ndarray:
+def extract_rotation_matrix(pose_matrix: Sequence[Sequence[float]]) -> np.ndarray:
 	"""pyopenvr의 HmdMatrix34_t(3x4)에서 회전 성분(3x3)만 뽑아냅니다."""
 	return np.array([
 		[pose_matrix[0][0], pose_matrix[0][1], pose_matrix[0][2]],
@@ -25,7 +27,7 @@ def extract_rotation_matrix(pose_matrix) -> np.ndarray:
 	])
 
 
-def extract_pitch_roll(rel_rot_matrix: np.ndarray):
+def extract_pitch_roll(rel_rot_matrix: np.ndarray) -> tuple[float, float]:
 	"""
     캘리브레이션 시점 대비 상대 회전행렬에서 pitch/roll만 추출합니다.
 
@@ -42,7 +44,7 @@ def extract_pitch_roll(rel_rot_matrix: np.ndarray):
 	return float(pitch), float(roll)
 
 
-def extract_yaw_pitch(rel_rot_matrix: np.ndarray):
+def extract_yaw_pitch(rel_rot_matrix: np.ndarray) -> tuple[float, float]:
 	"""
     캘리브레이션 시점 대비 HMD 상대 회전행렬에서 yaw/pitch만 추출합니다
     (카메라 pan/tilt 헤드 추종용).
