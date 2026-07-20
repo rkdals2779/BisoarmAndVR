@@ -46,6 +46,15 @@ class CameraHeadDriver:
 		self._goal_position_addr, self._goal_position_length = get_address(
 			bus.model_ctrl_table, MOTOR_MODEL, 'Goal_Position'
 		)
+		addr_length = get_address(
+			bus.model_ctrl_table, MOTOR_MODEL, 'Present_Position'
+		)
+		self._present_position_addr, self._present_position_length = (
+			addr_length
+		)
+		# 마지막 전송값 (실측 읽기 실패 시 관측 fallback용)
+		self.last_pan_deg: float | None = None
+		self.last_tilt_deg: float | None = None
 
 	def write_pan_tilt(self, pan_deg: float, tilt_deg: float) -> None:
 		"""pan/tilt 목표 각도를 두 모터에 전송한다.
@@ -56,6 +65,8 @@ class CameraHeadDriver:
 		"""
 		self._write_position(self.pan_motor_id, pan_deg)
 		self._write_position(self.tilt_motor_id, tilt_deg)
+		self.last_pan_deg = pan_deg
+		self.last_tilt_deg = tilt_deg
 
 	def _write_position(self, motor_id: int, position_deg: float) -> None:
 		# 0~360도 -> 0~4095 엔코더 카운트 변환
@@ -70,6 +81,29 @@ class CameraHeadDriver:
 			counts,
 			raise_on_error=False,
 		)
+
+	def read_pan_tilt(self) -> tuple[float, float] | None:
+		"""pan/tilt 모터의 실측 현재 각도를 읽는다.
+
+		Returns:
+			(pan_deg, tilt_deg). 통신 오류 시 None (호출부에서 마지막
+			전송값 등으로 fallback).
+		"""
+		try:
+			pan_deg = self._read_position(self.pan_motor_id)
+			tilt_deg = self._read_position(self.tilt_motor_id)
+		except Exception as error:
+			logger.debug('카메라 헤드 실측 읽기 실패: %s', error)
+			return None
+		return pan_deg, tilt_deg
+
+	def _read_position(self, motor_id: int) -> float:
+		counts, _comm, _motor_error = self.bus._read(
+			self._present_position_addr,
+			self._present_position_length,
+			motor_id,
+		)
+		return counts * 360.0 / ENCODER_COUNTS_PER_REV
 
 	def release_torque(self) -> None:
 		"""pan/tilt 모터의 토크를 해제한다 (손으로 움직이는 Free 상태).

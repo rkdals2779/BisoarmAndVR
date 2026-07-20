@@ -36,6 +36,9 @@ class CameraHeadConfig:
 		fixed_pan_deg: fixed 모드 목표 pan (None이면 홈 각도).
 		fixed_tilt_deg: fixed 모드 목표 tilt (None이면 홈 각도).
 		keyboard_speed_deg_s: keyboard 모드 이동 속도 (deg/s).
+		keyboard_keys: keyboard 모드 키 배치 ('arrows'/'wasd').
+			record 중에는 방향키가 에피소드 제어(조기 종료/재녹화)에
+			쓰이므로 wasd를 사용해야 한다.
 		vr_yaw_scale: HMD yaw -> pan 배율.
 		vr_pitch_scale: HMD pitch -> tilt 배율.
 		vr_yaw_sign: pan 방향 부호 (반대로 돌면 -1.0으로 뒤집기).
@@ -65,6 +68,7 @@ class CameraHeadConfig:
 	fixed_tilt_deg: float | None = None
 
 	keyboard_speed_deg_s: float = 60.0
+	keyboard_keys: str = 'arrows'
 
 	vr_yaw_scale: float = 1.0
 	vr_pitch_scale: float = -1.0
@@ -86,6 +90,11 @@ class CameraHeadConfig:
 		if self.bus_arm not in ('left', 'right'):
 			raise ValueError(
 				f'bus_arm은 left/right 중 하나여야 합니다: {self.bus_arm!r}'
+			)
+		if self.keyboard_keys not in ('arrows', 'wasd'):
+			raise ValueError(
+				f'keyboard_keys는 arrows/wasd 중 하나여야 합니다: '
+				f'{self.keyboard_keys!r}'
 			)
 		if not self.pan_min_deg < self.pan_max_deg:
 			raise ValueError(

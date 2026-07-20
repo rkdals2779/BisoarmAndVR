@@ -46,10 +46,16 @@ class VrCameraHeadController(CameraHeadControllerBase):
 	"""
 
 	def __init__(
-		self, config: CameraHeadConfig, driver: CameraHeadDriver,
+		self,
+		config: CameraHeadConfig,
+		driver: CameraHeadDriver,
+		vr_system: 'VRSystem | None' = None,
 	) -> None:
 		super().__init__(config, driver)
-		self.vr_system = VRSystem()
+		# vr_system을 주입받으면 세션 소유권은 외부(예: VR 팔 텔레옵과
+		# 공유)에 있으므로 connect/shutdown을 여기서 하지 않는다.
+		self._has_own_vr_session = vr_system is None
+		self.vr_system = vr_system if vr_system is not None else VRSystem()
 		self.rot_filter = OneEuroFilter(
 			min_cutoff=config.vr_filter_min_cutoff,
 			beta=config.vr_filter_beta,
@@ -66,7 +72,8 @@ class VrCameraHeadController(CameraHeadControllerBase):
 
 	def start(self) -> None:
 		"""SteamVR에 연결한다 (영점은 최초 유효 pose에서 자동 설정)."""
-		self.vr_system.connect()
+		if self._has_own_vr_session:
+			self.vr_system.connect()
 		print(
 			'[camera_head] VR 모드: HMD를 정면으로 향한 상태에서 '
 			'최초 인식된 방향이 영점이 됩니다.'
@@ -112,8 +119,11 @@ class VrCameraHeadController(CameraHeadControllerBase):
 		self._send(float(smoothed[0]), float(smoothed[1]))
 
 	def shutdown(self) -> None:
-		"""토크 해제 후 SteamVR 세션을 종료한다 (중복 호출 안전)."""
+		"""토크 해제 후 SteamVR 세션을 종료한다 (중복 호출 안전).
+
+		공유 세션이면 세션 종료는 외부 책임이다.
+		"""
 		is_first_call = not self._is_shutdown_done
 		super().shutdown()
-		if is_first_call:
+		if is_first_call and self._has_own_vr_session:
 			self.vr_system.shutdown()

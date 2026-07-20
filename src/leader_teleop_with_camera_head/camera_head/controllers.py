@@ -123,7 +123,10 @@ def resolve_shared_bus(robot: Robot, bus_arm: str) -> FeetechMotorsBus:
 
 
 def make_camera_head_controller(
-	config: CameraHeadConfig, robot: Robot,
+	config: CameraHeadConfig,
+	robot: Robot,
+	vr_system: object | None = None,
+	driver: CameraHeadDriver | None = None,
 ) -> CameraHeadControllerBase | None:
 	"""설정에 맞는 카메라 헤드 컨트롤러를 생성한다.
 
@@ -133,6 +136,9 @@ def make_camera_head_controller(
 	Args:
 		config: 카메라 헤드 설정.
 		robot: 연결이 끝난 lerobot 로봇 인스턴스.
+		vr_system: vr 모드에서 공유할 VRSystem (None이면 자체 세션).
+		driver: 재사용할 드라이버 (None이면 robot에서 버스를 찾아 생성.
+			record처럼 관측 주입용 드라이버가 이미 있으면 그걸 넘긴다).
 
 	Returns:
 		모드에 맞는 컨트롤러. mode가 none이면 None.
@@ -143,10 +149,11 @@ def make_camera_head_controller(
 	if config.mode == CameraHeadMode.NONE:
 		return None
 
-	bus = resolve_shared_bus(robot, config.bus_arm)
-	driver = CameraHeadDriver(
-		bus, config.pan_motor_id, config.tilt_motor_id
-	)
+	if driver is None:
+		bus = resolve_shared_bus(robot, config.bus_arm)
+		driver = CameraHeadDriver(
+			bus, config.pan_motor_id, config.tilt_motor_id
+		)
 
 	if config.mode == CameraHeadMode.FIXED:
 		return FixedCameraHeadController(config, driver)
@@ -155,5 +162,5 @@ def make_camera_head_controller(
 		return KeyboardCameraHeadController(config, driver)
 	if config.mode == CameraHeadMode.VR:
 		from .vr_controller import VrCameraHeadController
-		return VrCameraHeadController(config, driver)
+		return VrCameraHeadController(config, driver, vr_system=vr_system)
 	raise ValueError(f'알 수 없는 카메라 헤드 모드: {config.mode!r}')
